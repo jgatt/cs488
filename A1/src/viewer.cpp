@@ -140,13 +140,13 @@ void Viewer::setSpeed(int speed) {
   timer.disconnect();   
   switch(speed) {
     case 0:
-      timer = Glib::signal_timeout().connect(tslot, 2000);
-      break;
-    case 1:
       timer = Glib::signal_timeout().connect(tslot, 1000);
       break;
-    case 2:
+    case 1:
       timer = Glib::signal_timeout().connect(tslot, 500);
+      break;
+    case 2:
+      timer = Glib::signal_timeout().connect(tslot, 250);
       break;
     default:
       break;
