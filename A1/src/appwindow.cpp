@@ -77,7 +77,6 @@ bool AppWindow::on_key_press_event( GdkEventKey *ev )
 
 	// An example key; delete and replace with the
 	// keys you want to process
-      cout << ev->keyval << endl;
       if (ev->keyval == ' ' ||
         ev->keyval == 65361 ||
         ev->keyval == 65362 ||
@@ -93,7 +92,6 @@ bool AppWindow::on_key_press_event( GdkEventKey *ev )
 
 bool AppWindow::on_key_release_event( GdkEventKey *ev )
 {
-  cout << "release!" << endl;
   if (ev->keyval == 65505) {
     m_viewer.gameKeyUp(ev->keyval);
     return true;

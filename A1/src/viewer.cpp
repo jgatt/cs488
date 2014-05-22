@@ -3,36 +3,52 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <iostream>
+#include <math.h>
 
 using namespace std;
 
-double rotate_x = 0.0f;
-double rotate_y = 0.0f;
-double rotate_z = 0.0f;
-
 double scale_factor = 1.0f;
-
 int rotationMode = 0; 
 int previousMousePosition = 0;
+double gravityAmount = 0;
+double gravityTotal = 0;
+int gravityDirection = 0;
 
 bool shiftOn = false;
 
- int delayInMillis = 1000; 
+int delayInMillis = 1000; 
 
- bool gameStarted = false;
+bool gameStarted = false;
+
+int multi_colour_mode = false;
 
 sigc::connection timer;
-sigc::slot0<bool> tslot; 
+sigc::connection gravityTimer;
 
-static int colours[][3] = {
-  {1, 0, 0}, //red
-  {0, 1, 0}, //green
-  {0, 0, 1}, //blue
+sigc::slot0<bool> tslot; 
+sigc::slot0<bool> tslotGravity; 
+
+GLfloat light1_position[] = { 0, 0, 0, 0, 0};
+GLfloat light1_ambient[] = { 0, 0, 0, 1.0 };
+GLfloat light1_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat light1_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+
+GLfloat material_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat material_emission[] = { 0, 0, 0, 1.0 };
+
+static float colours[][3] = {
+  {1.0, 0, 0}, //red
+  {0, 1.0, 0}, //green
+  {0, 0, 1.0}, //blue
   {1.0, 0.5, 0.0}, //orange
   {1.0, 1.0, 0.0}, //yellow
   {1.0, 0.0, 1.0}, //magenta
-  {0.0, 1.0, 1.0}
+  {0.0, 1.0, 1.0},
+  {0.5, 0.0, 0.5},
+  {1.0, 1.0, 1.0}
 };
+
+double rotate_amount[] = {0, 0, 0};
 
 Viewer::Viewer()
 {
@@ -62,6 +78,7 @@ Viewer::Viewer()
              Gdk::BUTTON_RELEASE_MASK    |
              Gdk::VISIBILITY_NOTIFY_MASK);
 
+  game = NULL;
 }
 
 Viewer::~Viewer()
@@ -106,15 +123,14 @@ void Viewer::on_realize()
 }
 
 void Viewer::setDrawMode(int mode) {
-  cout << mode << endl;
+  multi_colour_mode = false;
   if (mode == 0) {
-    cout << "WIREFRAME" << endl;
     glPolygonMode( GL_FRONT_AND_BACK, GL_LINE );
-  } else if (mode == 1){
-    cout << "NOT WIREFRAME" << endl;
+  } else if (mode == 1) {
     glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
-  } else {
-    cout << "MULTICOLOUR" << endl;
+  } else if (mode == 2) {
+    glPolygonMode( GL_FRONT_AND_BACK, GL_FILL );
+    multi_colour_mode = true;
   }
 
   invalidate();
@@ -142,35 +158,36 @@ void Viewer::gameKeyUp(int keyval) {
 }
 
 void Viewer::gameKeyDown(int keyval) {
-  switch(keyval) {
-    case 32:
-      game->drop();
-      break;
-    case 65361:
-      game->moveLeft();
-      break;
-    case  65362:
-      game->rotateCW(); 
-      break;
-    case 65363:
-      game->moveRight();
-      break;
-    case 65364:
-      game->rotateCCW(); 
-      break;
-    case 65505:
-      shiftOn = true; 
-    default:
-      break;
-  }  
-  invalidate();
+  if (keyval == 65505) {
+    shiftOn = true;
+    return;
+  } else if (gameStarted) {
+    switch(keyval) {
+      case 32:
+        game->drop();
+        break;
+      case 65361:
+        game->moveLeft();
+        break;
+      case  65362:
+        game->rotateCW(); 
+        break;
+      case 65363:
+        game->moveRight();
+        break;
+      case 65364:
+        game->rotateCCW(); 
+        break; 
+      default:
+        break;
+    }  
+    invalidate();
+  } 
 }
 
 void Viewer::scaleScene(int mousePos) {
   int diff = mousePos - previousMousePosition;
-  scale_factor += (diff / 10000.0f);
-  cout << scale_factor << endl;
-
+  scale_factor += (diff / 100.0f);
   if (scale_factor < 0.4)  {
     scale_factor = 0.4;
   } else if (scale_factor > 1.4) {
@@ -182,31 +199,16 @@ void Viewer::scaleScene(int mousePos) {
 
 void Viewer::rotateAboutAxis(int mousePos) {
   int diff = mousePos - previousMousePosition;
-  switch(rotationMode) {
-    case 0:
-      break;
-    case 1:
-      rotate_x += (diff / 100.0f);
-      break;
-    case 2:
-      rotate_y += (diff / 100.0f);
-      break;
-    case 3:
-      rotate_z += (diff / 100.0f);
-      break;
-    default:
-      break;
-  }
-
+  rotate_amount[rotationMode - 1] += (diff); 
   invalidate();
 }
 
 void Viewer::drawGame() {
   for (int r =0; r < game->getHeight() + 4; r++) {
     for (int c = 0; c < game->getWidth(); c++) {
-      int temp = game->get(r, c);
-      if (temp != -1) {
-        drawCube(c, r, 0, temp);
+      int colour = game->get(r, c);
+      if (colour != -1) {
+        drawCube(c, r, 0, colour);
       }
     }
   }
@@ -217,13 +219,18 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
   glTranslated(x, y, z);
   glBegin(GL_QUADS);
   
-  int *colour_def = colours[colour];
-  glColor3f(colour_def[0], colour_def[1], colour_def[2]);     // Green
+  float *colour_def = colours[colour];
+  glColor3f(colour_def[0], colour_def[1], colour_def[2]);  
 
   glVertex3d( 1.0, 1.0, 0);
   glVertex3d(0, 1.0, 0);
   glVertex3d(0, 1.0,  1.0);
   glVertex3d( 1.0, 1.0,  1.0);
+
+  if (multi_colour_mode) {
+    colour_def = colours[(colour + 1) % 9];
+    glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
+  }
 
   // Bottom face (y = 0f)
   glVertex3d( 1.0, 0,  1.0);
@@ -231,24 +238,41 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
   glVertex3d(0, 0, 0);
   glVertex3d( 1.0, 0, 0);
 
+ if (multi_colour_mode) {
+    colour_def = colours[(colour + 2) % 9];
+    glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
+  } 
+
   // Front face  (z = 1.0f)
   glVertex3d( 1.0,  1.0, 1.0);
   glVertex3d(0,  1.0, 1.0);
   glVertex3d(0, 0, 1.0);
   glVertex3d( 1.0, 0, 1.0f);
 
+  if (multi_colour_mode) {
+    colour_def = colours[(colour + 3) % 9];
+    glColor3f(colour_def[0], colour_def[1], colour_def[2]);     
+  }
   // Back face (z = 0f)
   glVertex3d( 1.0, 0, 0);
   glVertex3d(0, 0, 0);
   glVertex3d(0,  1.0, 0);
   glVertex3d( 1.0,  1.0, 0);
 
+  if (multi_colour_mode) {
+    colour_def = colours[(colour + 4) % 9];
+    glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
+  }
   // Left face (x = 0f)
   glVertex3d(0,  1.0,  1.0);
   glVertex3d(0,  1.0, 0);
   glVertex3d(0, 0, 0);
   glVertex3d(0, 0,  1.0);
 
+  if (multi_colour_mode) {
+    colour_def = colours[(colour + 5) % 9];
+    glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
+  }
   // Right face (x = 1.0f)
   glVertex3d(1.0,  1.0, 0);
   glVertex3d(1.0,  1.0,  1.0);
@@ -260,30 +284,41 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
 }
 
 void Viewer::drawWell() {
-  for (int i = 0; i < 24; i++) {
-    drawCube(-1.0, (double)i, 0, 6);
+  for (int i = 0; i < 20; i++) {
+    drawCube(-1.0, (double)i, 0, 8);
   }
 
   for (int i = -1; i < 11; i++) {
-    drawCube((double)i, -1.0, 0, 0); 
+    drawCube((double)i, -1.0, 0, 8); 
   } 
 
-  for (int i = 0; i < 24; i++) {
-    drawCube(10.0, (double)i, 0, 0); 
+  for (int i = 0; i < 20; i++) {
+    drawCube(10.0, (double)i, 0, 8); 
   } 
 }
 
-void Viewer::newGame() {
-  cout << "IN NEW GAME << endl";
-  game = new Game(10, 20); 
+void Viewer::newGame() { 
+  if (game == NULL) {
+    game = new Game(10, 20); 
+    gameStarted = true;
+  } else {
+    timer.disconnect();
+    game->reset();
+  }
 
   tslot = sigc::mem_fun(this, &Viewer::tick);
   timer = Glib::signal_timeout().connect(tslot, delayInMillis);
-  gameStarted = true;
+
+  reset();
 }
 
 void Viewer::reset() {
+  scale_factor = 1.0f;
+  for (int i = 0; i < 3; i++) {
+    rotate_amount[i] = 0;
+  } 
 
+  invalidate();
 }
 
 bool Viewer::on_expose_event(GdkEventExpose* event)
@@ -296,12 +331,8 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
     return false;
 
   // Clear the screen
-
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-  // Modify the current projection matrix so that we move the 
-  // camera away from the origin.  We'll draw the game at the
-  // origin, and we need to back up to see it.
   glMatrixMode(GL_PROJECTION);
   glPushMatrix();
   glTranslated(0.0, 0.0, -40.0);
@@ -309,21 +340,28 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  // Not implemented: set up lighting (if necessary)
+  //Lighting  
+  glEnable(GL_LIGHTING);
+  glEnable(GL_COLOR_MATERIAL);
 
-  // Not implemented: scale and rotate the scene
+  glLightfv(GL_LIGHT0, GL_POSITION, light1_position);
+  glLightfv(GL_LIGHT0, GL_AMBIENT, light1_ambient);
+  glLightfv(GL_LIGHT0, GL_DIFFUSE, light1_diffuse);
+  glLightfv(GL_LIGHT0, GL_SPECULAR, light1_specular);
+
+  glEnable(GL_LIGHT0);
+  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular); 
+
+  //Scale and Rotate
   glScaled(scale_factor, scale_factor, scale_factor);
 
-  glRotated(rotate_x, 1, 0, 0);
-  glRotated(rotate_y, 0, 1, 0);
-  glRotated(rotate_z, 0, 0, 1);
-
-  // You'll be drawing unit cubes, so the game will have width
-  // 10 and height 24 (game = 20, stripe = 4).  Let's translate
-  // the game so that we can draw it starting at (0,0) but have
-  // it appear centered in the window.
+  glRotated(rotate_amount[0], 1, 0, 0);
+  glRotated(rotate_amount[1], 0, 1, 0);
+  glRotated(rotate_amount[2], 0, 0, 1);
+ 
   glTranslated(-5.0, -12.0, 0.0);
 
+  //Draw the Game
   drawWell(); 
   if (gameStarted) {
     drawGame();
@@ -369,6 +407,23 @@ bool Viewer::on_configure_event(GdkEventConfigure* event)
   return true;
 }
 
+
+
+bool Viewer::gravityRotate() {
+
+  cout << "sup" << endl;
+  rotate_amount[rotationMode - 1] += (gravityDirection) * (gravityTotal * (gravityAmount / gravityTotal)); 
+  gravityAmount -= (gravityTotal / gravityAmount);
+
+  if (gravityAmount <= 0) {
+    gravityTotal = 0;
+    gravityTimer.disconnect(); 
+  }
+
+  invalidate();
+  return true;
+}
+
 bool Viewer::on_button_press_event(GdkEventButton* event)
 {
   std::cerr << "Stub: Button " << event->button << " pressed" << std::endl;
@@ -381,18 +436,37 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 
 bool Viewer::on_button_release_event(GdkEventButton* event)
 {
-  std::cerr << "Stub: Button " << event->button << " released" << std::endl;
-  rotationMode = 0;
+  cout << "release: " << event->x << endl;
+
+  if (gravityAmount != 0) {
+    cout << "RELEASE: " << gravityDirection << endl;
+    gravityTotal = gravityAmount;
+    tslotGravity = sigc::mem_fun(this, &Viewer::gravityRotate);
+    gravityTimer = Glib::signal_timeout().connect(tslotGravity, 16);
+  }
+
   return true;
 }
 
 bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 {
   std::cerr << "Stub: Motion at " << event->x << ", " << event->y << std::endl;
+
   if (shiftOn) {
     scaleScene(event->x);
   } else {
+    int diff = event->x - previousMousePosition;
+    if (abs(diff) > 1) {
+      gravityAmount = abs(diff);
+      gravityDirection = (diff / abs(diff));
+    } else {
+      gravityAmount = 0;
+    }
+
     rotateAboutAxis(event->x);
   }
+
+  previousMousePosition = event->x;
+
   return true;
 }

@@ -46,6 +46,7 @@ protected:
 
 private:
   bool tick();
+  bool gravityRotate();
   void drawWell();
   void drawCube(double, double, double, int);
   void drawGame();
