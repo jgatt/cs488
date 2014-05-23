@@ -8,19 +8,19 @@
 using namespace std;
 
 double scale_factor = 1.0f;
-int rotationMode = 0; 
-int previousMousePosition = 0;
 double gravityAmount = 0;
 double gravityTotal = 0;
+double rotate_amount[] = {0, 0, 0};
+
+int rotationMode = 0; 
+int previousMousePosition = 0;
 int gravityDirection = 0;
+int game_speed = 500; 
 
 bool shiftOn = false;
-
-int delayInMillis = 1000; 
-
 bool gameStarted = false;
-
-int multi_colour_mode = false;
+bool compatibility_mode = false;
+bool multi_colour_mode = false;
 
 sigc::connection timer;
 sigc::connection gravityTimer;
@@ -28,10 +28,10 @@ sigc::connection gravityTimer;
 sigc::slot0<bool> tslot; 
 sigc::slot0<bool> tslotGravity; 
 
-GLfloat light1_position[] = { 0, 0, 0, 0, 0};
-GLfloat light1_ambient[] = { 0, 0, 0, 1.0 };
-GLfloat light1_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
-GLfloat light1_specular[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat light0_position[] = { 0, 0, 0, 0, 0};
+GLfloat light0_ambient[] = { 0, 0, 0, 1.0 };
+GLfloat light0_diffuse[] = { 1.0, 1.0, 1.0, 1.0 };
+GLfloat light0_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 
 GLfloat material_specular[] = { 1.0, 1.0, 1.0, 1.0 };
 GLfloat material_emission[] = { 0, 0, 0, 1.0 };
@@ -45,10 +45,10 @@ static float colours[][3] = {
   {1.0, 0.0, 1.0}, //magenta
   {0.0, 1.0, 1.0},
   {0.5, 0.0, 0.5},
+  {1.0, 1.0, 1.0},
   {1.0, 1.0, 1.0}
 };
 
-double rotate_amount[] = {0, 0, 0};
 
 Viewer::Viewer()
 {
@@ -86,19 +86,26 @@ Viewer::~Viewer()
   delete game;
 }
 
+void Viewer::toggleCompatibility() {
+  compatibility_mode = !compatibility_mode;
+  invalidate();
+}
 
 bool Viewer::tick() {
-  game->tick();
+ 
+	if (game->tick() < 0) {
+		newGame();	
+	} 	
+
   invalidate();
   return true;
-}
+};
 
 void Viewer::invalidate()
 {
   //Force a rerender
   Gtk::Allocation allocation = get_allocation();
-  get_window()->invalidate_rect( allocation, false);
-  
+  get_window()->invalidate_rect( allocation, false);  
 }
 
 void Viewer::on_realize()
@@ -137,46 +144,50 @@ void Viewer::setDrawMode(int mode) {
 }
 
 void Viewer::setSpeed(int speed) {
-  timer.disconnect();   
-  switch(speed) {
-    case 0:
-      timer = Glib::signal_timeout().connect(tslot, 1000);
-      break;
+	switch(speed) {
+		case 0:
+			game_speed = 500;
+			break;
     case 1:
-      timer = Glib::signal_timeout().connect(tslot, 500);
+			game_speed = 250;
       break;
     case 2:
-      timer = Glib::signal_timeout().connect(tslot, 250);
-      break;
-    default:
-      break;
-  }
+			game_speed = 100;
+
+	}
+
+	if (gameStarted) {
+  	timer.disconnect();
+		timer = Glib::signal_timeout().connect(tslot, game_speed);
+ 	} 
 }
 
 void Viewer::gameKeyUp(int keyval) {
-  shiftOn = false;
+  if (keyval == GDK_KEY_Shift_L || keyval == GDK_KEY_Shift_R) {
+  	shiftOn = false;
+	}
 }
 
 void Viewer::gameKeyDown(int keyval) {
-  if (keyval == 65505) {
+  if (keyval == GDK_KEY_Shift_L || keyval == GDK_KEY_Shift_R) {
     shiftOn = true;
     return;
   } else if (gameStarted) {
     switch(keyval) {
-      case 32:
+      case GDK_KEY_space:
         game->drop();
         break;
-      case 65361:
+      case GDK_KEY_Left:
         game->moveLeft();
         break;
-      case  65362:
-        game->rotateCW(); 
+      case GDK_KEY_Up:
+        game->rotateCCW(); 
         break;
-      case 65363:
+      case GDK_KEY_Right:
         game->moveRight();
         break;
-      case 65364:
-        game->rotateCCW(); 
+      case GDK_KEY_Down:
+        game->rotateCW(); 
         break; 
       default:
         break;
@@ -188,10 +199,10 @@ void Viewer::gameKeyDown(int keyval) {
 void Viewer::scaleScene(int mousePos) {
   int diff = mousePos - previousMousePosition;
   scale_factor += (diff / 100.0f);
-  if (scale_factor < 0.4)  {
-    scale_factor = 0.4;
-  } else if (scale_factor > 1.4) {
-    scale_factor = 1.4;
+  if (scale_factor < 0.2)  {
+    scale_factor = 0.2;
+  } else if (scale_factor > 1.2) {
+    scale_factor = 1.2;
   }
 
   invalidate();
@@ -297,6 +308,7 @@ void Viewer::drawWell() {
   } 
 }
 
+//NOTE: For new game I made the assumption it doesn't reset the board
 void Viewer::newGame() { 
   if (game == NULL) {
     game = new Game(10, 20); 
@@ -305,11 +317,10 @@ void Viewer::newGame() {
     timer.disconnect();
     game->reset();
   }
-
   tslot = sigc::mem_fun(this, &Viewer::tick);
-  timer = Glib::signal_timeout().connect(tslot, delayInMillis);
-
-  reset();
+  timer = Glib::signal_timeout().connect(tslot, game_speed);
+	
+	invalidate();
 }
 
 void Viewer::reset() {
@@ -341,16 +352,22 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
   glLoadIdentity();
 
   //Lighting  
-  glEnable(GL_LIGHTING);
-  glEnable(GL_COLOR_MATERIAL);
+  if (!compatibility_mode) {
+    glEnable(GL_LIGHTING);
+    glEnable(GL_COLOR_MATERIAL);
 
-  glLightfv(GL_LIGHT0, GL_POSITION, light1_position);
-  glLightfv(GL_LIGHT0, GL_AMBIENT, light1_ambient);
-  glLightfv(GL_LIGHT0, GL_DIFFUSE, light1_diffuse);
-  glLightfv(GL_LIGHT0, GL_SPECULAR, light1_specular);
+    glLightfv(GL_LIGHT0, GL_POSITION, light0_position);
+    glLightfv(GL_LIGHT0, GL_AMBIENT, light0_ambient);
+    glLightfv(GL_LIGHT0, GL_DIFFUSE, light0_diffuse);
+    glLightfv(GL_LIGHT0, GL_SPECULAR, light0_specular);
 
-  glEnable(GL_LIGHT0);
-  glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular); 
+    glEnable(GL_LIGHT0);
+    glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, material_specular);
+  } else {
+    glDisable(GL_LIGHTING);
+    glDisable(GL_COLOR_MATERIAL);
+    glDisable(GL_LIGHT0);
+  }
 
   //Scale and Rotate
   glScaled(scale_factor, scale_factor, scale_factor);
@@ -410,8 +427,6 @@ bool Viewer::on_configure_event(GdkEventConfigure* event)
 
 
 bool Viewer::gravityRotate() {
-
-  cout << "sup" << endl;
   rotate_amount[rotationMode - 1] += (gravityDirection) * (gravityTotal * (gravityAmount / gravityTotal)); 
   gravityAmount -= (gravityTotal / gravityAmount);
 
@@ -426,8 +441,6 @@ bool Viewer::gravityRotate() {
 
 bool Viewer::on_button_press_event(GdkEventButton* event)
 {
-  std::cerr << "Stub: Button " << event->button << " pressed" << std::endl;
-
   previousMousePosition = event->x;
   rotationMode = event->button;
 
@@ -436,10 +449,7 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 
 bool Viewer::on_button_release_event(GdkEventButton* event)
 {
-  cout << "release: " << event->x << endl;
-
-  if (gravityAmount != 0) {
-    cout << "RELEASE: " << gravityDirection << endl;
+  if (gravityAmount != 0 && gravityTotal == 0) {
     gravityTotal = gravityAmount;
     tslotGravity = sigc::mem_fun(this, &Viewer::gravityRotate);
     gravityTimer = Glib::signal_timeout().connect(tslotGravity, 16);
@@ -450,11 +460,9 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 
 bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 {
-  std::cerr << "Stub: Motion at " << event->x << ", " << event->y << std::endl;
-
   if (shiftOn) {
     scaleScene(event->x);
-  } else {
+  } else if (gravityTotal == 0){
     int diff = event->x - previousMousePosition;
     if (abs(diff) > 1) {
       gravityAmount = abs(diff);

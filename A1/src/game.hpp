@@ -27,6 +27,7 @@ public:
   int getTopMargin() const;
   int getRightMargin() const;
   int getBottomMargin() const;
+  void setColourIndex(const int);
   int getColourIndex() const;
 
   Piece rotateCW() const;
@@ -110,6 +111,8 @@ private:
 
   void removePiece(const Piece& p, int x, int y);
   void placePiece(const Piece& p, int x, int y);
+  void generatePreview();
+  void removePreview();
 
   void generateNewPiece();
 
@@ -120,6 +123,7 @@ private:
   bool stopped_;
 
   Piece piece_;
+  Piece preview_;
   int px_;
   int py_;
 

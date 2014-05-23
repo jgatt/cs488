@@ -13,7 +13,7 @@
 //---------------------------------------------------------------------------
 
 #include <algorithm>
-
+#include <iostream>
 #include "game.hpp"
 
 static const Piece PIECES[] = {
@@ -99,6 +99,11 @@ int Piece::getRightMargin() const
 int Piece::getBottomMargin() const
 {
   return margins_[3];
+}
+
+void Piece::setColourIndex(const int colour)
+{
+	cindex_ = colour;
 }
 
 int Piece::getColourIndex() const
@@ -202,7 +207,7 @@ bool Game::doesPieceFit(const Piece& p, int x, int y) const
   for(int r = 0; r < 4; ++r) {
     for(int c = 0; c < 4; ++c) {
       if(p.isOn(r, c)) {
-        if(get(y-r, x+c) != -1) {
+        if(get(y-r, x+c) != -1 && get(y-r, x+c) != 9) {
           return false;
         }
       }
@@ -319,6 +324,7 @@ int Game::tick()
   } else {
     placePiece(piece_, px_, ny);
     py_ = ny;
+    generatePreview();
     return 0;
   }
 }
@@ -338,6 +344,7 @@ bool Game::moveLeft()
   if(doesPieceFit(piece_, nx, py_)) {
     placePiece(piece_, nx, py_);
     px_ = nx;
+    generatePreview();
     return true;
   } else {
     placePiece(piece_, px_, py_);
@@ -353,11 +360,41 @@ bool Game::moveRight()
   if(doesPieceFit(piece_, nx, py_)) {
     placePiece(piece_, nx, py_);
     px_ = nx;
+    generatePreview();
     return true;
   } else {
     placePiece(piece_, px_, py_);
     return false;
   }
+}
+
+void Game::removePreview() {		
+	for(int r = 0; r < board_height_; ++r) {
+    for(int c = 0; c < board_width_; ++c) {
+      if(get(r, c) == 9) {
+        get(r, c) = -1;
+      }
+    }
+  }
+}
+
+void Game::generatePreview() {	
+	removePreview();
+      removePiece(piece_, px_, py_);
+	preview_ = piece_;
+	preview_.setColourIndex(9);
+      	
+	int ny = py_;
+      while(true) {
+        --ny; 
+        if(!doesPieceFit(preview_, px_, ny)) {
+          break;
+        }
+	}
+
+	++ny;
+	placePiece(preview_, px_, ny);
+      placePiece(piece_, px_, py_);
 }
 
 bool Game::drop() //the base
@@ -390,6 +427,7 @@ bool Game::rotateCW()
   if(doesPieceFit(npiece, px_, py_)) {
     placePiece(npiece, px_, py_);
     piece_ = npiece;
+    generatePreview();
     return true;
   } else {
     placePiece(piece_, px_, py_);
@@ -404,6 +442,7 @@ bool Game::rotateCCW()
   if(doesPieceFit(npiece, px_, py_)) {
     placePiece(npiece, px_, py_);
     piece_ = npiece;
+    generatePreview();
     return true;
   } else {
     placePiece(piece_, px_, py_);

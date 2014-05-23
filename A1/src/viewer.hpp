@@ -23,6 +23,7 @@ public:
 
   void newGame();
   void reset(); 
+  void toggleCompatibility();
 protected:
 
   // Events we implement

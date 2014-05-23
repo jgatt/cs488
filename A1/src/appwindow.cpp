@@ -21,6 +21,9 @@ AppWindow::AppWindow()
   m_menu_app.items().push_back(MenuElem("_Reset", Gtk::AccelKey("r"),
     sigc::mem_fun(&m_viewer, &Viewer::reset)));
 
+  m_menu_app.items().push_back(MenuElem("_Compatibility _Mode", Gtk::AccelKey("c"),
+    sigc::mem_fun(&m_viewer, &Viewer::toggleCompatibility)));
+
   m_menu_app.items().push_back(MenuElem("_Quit", Gtk::AccelKey("q"),
     sigc::mem_fun(*this, &AppWindow::hide)));
 
@@ -72,30 +75,17 @@ AppWindow::AppWindow()
 
 bool AppWindow::on_key_press_event( GdkEventKey *ev )
 {
-        // This is a convenient place to handle non-shortcut
-        // keys.  You'll want to look at ev->keyval.
-
-	// An example key; delete and replace with the
-	// keys you want to process
-      if (ev->keyval == ' ' ||
-        ev->keyval == 65361 ||
-        ev->keyval == 65362 ||
-        ev->keyval == 65363 || 
-        ev->keyval == 65364 ||
-        ev->keyval == 65505) {
-          m_viewer.gameKeyDown(ev->keyval);
-          return true;
-        } else {
-                return Gtk::Window::on_key_press_event( ev );
-        }
+	m_viewer.gameKeyDown(ev->keyval);
+	return Gtk::Window::on_key_press_event( ev );       
 }
 
 bool AppWindow::on_key_release_event( GdkEventKey *ev )
 {
-  if (ev->keyval == 65505) {
-    m_viewer.gameKeyUp(ev->keyval);
-    return true;
-  } else {
-    return Gtk::Window::on_key_press_event( ev );
-  }
+	m_viewer.gameKeyUp(ev->keyval);
+	if (ev->keyval == 'n' || ev->keyval == 'N' 
+        || ev->keyval == 'c' || ev->keyval == 'C') {
+		return true;		
+	}
+
+	return Gtk::Window::on_key_press_event( ev );
 }
