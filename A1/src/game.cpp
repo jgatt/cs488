@@ -160,6 +160,7 @@ Game::Game(int width, int height)
   : board_width_(width)
   , board_height_(height)
   , stopped_(false)
+  , compatibility_mode_(false)
 {
   int sz = board_width_ * (board_height_+4);
 
@@ -298,6 +299,7 @@ void Game::generateNewPiece()
   px_ = xleft;
   py_ = board_height_ + 3 - piece_.getBottomMargin();
   placePiece(piece_, px_, py_);
+  generatePreview();
 }
 
 int Game::tick()
@@ -368,6 +370,15 @@ bool Game::moveRight()
   }
 }
 
+void Game::setCompatibilityMode(const bool mode) {
+  compatibility_mode_ = mode; 
+  if (compatibility_mode_) {
+    removePreview();
+  } else {
+    generatePreview();
+  }
+}
+
 void Game::removePreview() {		
 	for(int r = 0; r < board_height_; ++r) {
     for(int c = 0; c < board_width_; ++c) {
@@ -379,22 +390,24 @@ void Game::removePreview() {
 }
 
 void Game::generatePreview() {	
-	removePreview();
-      removePiece(piece_, px_, py_);
-	preview_ = piece_;
-	preview_.setColourIndex(9);
-      	
-	int ny = py_;
-      while(true) {
-        --ny; 
-        if(!doesPieceFit(preview_, px_, ny)) {
-          break;
+      if (!compatibility_mode_) {
+        removePreview();
+        removePiece(piece_, px_, py_);
+        preview_ = piece_;
+        preview_.setColourIndex(9);
+          
+        int ny = py_;
+        while(true) {
+          --ny; 
+          if(!doesPieceFit(preview_, px_, ny)) {
+            break;
+          }
         }
-	}
 
-	++ny;
-	placePiece(preview_, px_, ny);
-      placePiece(piece_, px_, py_);
+        ++ny;
+        placePiece(preview_, px_, ny);
+        placePiece(piece_, px_, py_);
+      }	
 }
 
 bool Game::drop() //the base

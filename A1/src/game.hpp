@@ -103,6 +103,7 @@ public:
   int get(int r, int c) const;
   int& get(int r, int c);
 
+  void setCompatibilityMode(const bool);
 private:
   bool doesPieceFit(const Piece& p, int x, int y) const;
 
@@ -113,7 +114,6 @@ private:
   void placePiece(const Piece& p, int x, int y);
   void generatePreview();
   void removePreview();
-
   void generateNewPiece();
 
 private:
@@ -121,6 +121,7 @@ private:
   int board_height_;
 
   bool stopped_;
+  bool compatibility_mode_;
 
   Piece piece_;
   Piece preview_;

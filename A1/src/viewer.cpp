@@ -17,6 +17,7 @@ int previousMousePosition = 0;
 int gravityDirection = 0;
 int game_speed = 500; 
 
+bool inputAllowed = true;
 bool shiftOn = false;
 bool gameStarted = false;
 bool compatibility_mode = false;
@@ -88,13 +89,20 @@ Viewer::~Viewer()
 
 void Viewer::toggleCompatibility() {
   compatibility_mode = !compatibility_mode;
+  game->setCompatibilityMode(compatibility_mode);
   invalidate();
 }
 
 bool Viewer::tick() {
  
-	if (game->tick() < 0) {
-		newGame();	
+	if (game->tick() < 0 && inputAllowed) {
+        inputAllowed = false;
+        gravityAmount = 31.5;
+        gravityTotal = 31.5;
+        gravityDirection = -1;
+        rotationMode = 2;
+        tslotGravity = sigc::mem_fun(this, &Viewer::gravityRotate);
+        gravityTimer = Glib::signal_timeout().connect(tslotGravity, 16);  
 	} 	
 
   invalidate();
@@ -144,22 +152,23 @@ void Viewer::setDrawMode(int mode) {
 }
 
 void Viewer::setSpeed(int speed) {
-	switch(speed) {
-		case 0:
-			game_speed = 500;
-			break;
+  switch(speed) {
+    case 0:
+    game_speed = 500;
+    break;
     case 1:
-			game_speed = 250;
-      break;
+    game_speed = 250;
+    break;
     case 2:
-			game_speed = 100;
-
-	}
-
-	if (gameStarted) {
-  	timer.disconnect();
-		timer = Glib::signal_timeout().connect(tslot, game_speed);
- 	} 
+    game_speed = 100;
+    break;
+    default:
+    break;
+  }
+  if (gameStarted) {
+    timer.disconnect();
+    timer = Glib::signal_timeout().connect(tslot, game_speed);
+  } 
 }
 
 void Viewer::gameKeyUp(int keyval) {
@@ -172,7 +181,7 @@ void Viewer::gameKeyDown(int keyval) {
   if (keyval == GDK_KEY_Shift_L || keyval == GDK_KEY_Shift_R) {
     shiftOn = true;
     return;
-  } else if (gameStarted) {
+  } else if (gameStarted && inputAllowed) {
     switch(keyval) {
       case GDK_KEY_space:
         game->drop();
@@ -317,10 +326,12 @@ void Viewer::newGame() {
     timer.disconnect();
     game->reset();
   }
+  inputAllowed = true;
+  
   tslot = sigc::mem_fun(this, &Viewer::tick);
   timer = Glib::signal_timeout().connect(tslot, game_speed);
 	
-	invalidate();
+  invalidate();
 }
 
 void Viewer::reset() {
