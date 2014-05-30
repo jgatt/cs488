@@ -12,7 +12,7 @@ double gravityAmount = 0;
 double gravityTotal = 0;
 double rotate_amount[] = {0, 0, 0};
 
-int rotationMode = 0; 
+int rotation_modes[] = {0, 0, 0}; 
 int previousMousePosition = 0;
 int gravityDirection = 0;
 int game_speed = 500; 
@@ -89,7 +89,9 @@ Viewer::~Viewer()
 
 void Viewer::toggleCompatibility() {
   compatibility_mode = !compatibility_mode;
-  game->setCompatibilityMode(compatibility_mode);
+  if (gameStarted) {
+    game->setCompatibilityMode(compatibility_mode);
+  }
   invalidate();
 }
 
@@ -100,7 +102,7 @@ bool Viewer::tick() {
         gravityAmount = 31.5;
         gravityTotal = 31.5;
         gravityDirection = -1;
-        rotationMode = 2;
+        rotation_modes[1] = 1; 
         tslotGravity = sigc::mem_fun(this, &Viewer::gravityRotate);
         gravityTimer = Glib::signal_timeout().connect(tslotGravity, 16);  
 	} 	
@@ -219,7 +221,9 @@ void Viewer::scaleScene(int mousePos) {
 
 void Viewer::rotateAboutAxis(int mousePos) {
   int diff = mousePos - previousMousePosition;
-  rotate_amount[rotationMode - 1] += (diff); 
+  for (int i = 0; i < 3; i++) {
+    rotate_amount[i] += (rotation_modes[i] * diff); 
+  }
   invalidate();
 }
 
@@ -252,7 +256,6 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
     glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
   }
 
-  // Bottom face (y = 0f)
   glVertex3d( 1.0, 0,  1.0);
   glVertex3d(0, 0,  1.0);
   glVertex3d(0, 0, 0);
@@ -263,7 +266,6 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
     glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
   } 
 
-  // Front face  (z = 1.0f)
   glVertex3d( 1.0,  1.0, 1.0);
   glVertex3d(0,  1.0, 1.0);
   glVertex3d(0, 0, 1.0);
@@ -273,7 +275,7 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
     colour_def = colours[(colour + 3) % 9];
     glColor3f(colour_def[0], colour_def[1], colour_def[2]);     
   }
-  // Back face (z = 0f)
+  
   glVertex3d( 1.0, 0, 0);
   glVertex3d(0, 0, 0);
   glVertex3d(0,  1.0, 0);
@@ -283,7 +285,7 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
     colour_def = colours[(colour + 4) % 9];
     glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
   }
-  // Left face (x = 0f)
+
   glVertex3d(0,  1.0,  1.0);
   glVertex3d(0,  1.0, 0);
   glVertex3d(0, 0, 0);
@@ -293,7 +295,7 @@ void Viewer::drawCube(double x, double y, double z, int colour) {
     colour_def = colours[(colour + 5) % 9];
     glColor3f(colour_def[0], colour_def[1], colour_def[2]);    
   }
-  // Right face (x = 1.0f)
+
   glVertex3d(1.0,  1.0, 0);
   glVertex3d(1.0,  1.0,  1.0);
   glVertex3d(1.0, 0,  1.0);
@@ -317,17 +319,17 @@ void Viewer::drawWell() {
   } 
 }
 
-//NOTE: For new game I made the assumption it doesn't reset the board
 void Viewer::newGame() { 
   if (game == NULL) {
     game = new Game(10, 20); 
+    game->setCompatibilityMode(compatibility_mode);
     gameStarted = true;
   } else {
     timer.disconnect();
     game->reset();
   }
   inputAllowed = true;
-  
+
   tslot = sigc::mem_fun(this, &Viewer::tick);
   timer = Glib::signal_timeout().connect(tslot, game_speed);
 	
@@ -338,6 +340,7 @@ void Viewer::reset() {
   scale_factor = 1.0f;
   for (int i = 0; i < 3; i++) {
     rotate_amount[i] = 0;
+    rotation_modes[i] = 0;
   } 
 
   invalidate();
@@ -382,7 +385,7 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 
   //Scale and Rotate
   glScaled(scale_factor, scale_factor, scale_factor);
-
+ 
   glRotated(rotate_amount[0], 1, 0, 0);
   glRotated(rotate_amount[1], 0, 1, 0);
   glRotated(rotate_amount[2], 0, 0, 1);
@@ -435,15 +438,22 @@ bool Viewer::on_configure_event(GdkEventConfigure* event)
   return true;
 }
 
-
-
 bool Viewer::gravityRotate() {
-  rotate_amount[rotationMode - 1] += (gravityDirection) * (gravityTotal * (gravityAmount / gravityTotal)); 
-  gravityAmount -= (gravityTotal / gravityAmount);
-
   if (gravityAmount <= 0) {
+    for (int i =0; i < 3; i++) {
+      rotation_modes[i] = 0;
+    }
     gravityTotal = 0;
     gravityTimer.disconnect(); 
+    return true;
+  }
+
+  for (int i = 0; i < 3; i++) {
+    rotate_amount[i] += (rotation_modes[i] * (gravityDirection) * (gravityAmount));
+  }
+
+  if (!compatibility_mode) {
+    gravityAmount -= (gravityTotal / gravityAmount);
   }
 
   invalidate();
@@ -453,17 +463,27 @@ bool Viewer::gravityRotate() {
 bool Viewer::on_button_press_event(GdkEventButton* event)
 {
   previousMousePosition = event->x;
-  rotationMode = event->button;
+  rotation_modes[event->button - 1] = 1; 
+
+  if (!gravityTimer.empty()) {
+    gravityAmount = 0;
+    gravityTotal = 0;
+    gravityTimer.disconnect();
+  } 
 
   return true;
 }
 
 bool Viewer::on_button_release_event(GdkEventButton* event)
 {
-  if (gravityAmount != 0 && gravityTotal == 0) {
-    gravityTotal = gravityAmount;
-    tslotGravity = sigc::mem_fun(this, &Viewer::gravityRotate);
-    gravityTimer = Glib::signal_timeout().connect(tslotGravity, 16);
+  if (gravityAmount != 0 && gravityTimer.empty()) {
+    if (gravityTimer.empty()) {
+      gravityTotal = gravityAmount;
+      tslotGravity = sigc::mem_fun(this, &Viewer::gravityRotate);
+      gravityTimer = Glib::signal_timeout().connect(tslotGravity, 16);
+    } 
+  } else {
+    rotation_modes[event->button -1] = 0;
   }
 
   return true;
@@ -473,7 +493,7 @@ bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 {
   if (shiftOn) {
     scaleScene(event->x);
-  } else if (gravityTotal == 0){
+  } else{
     int diff = event->x - previousMousePosition;
     if (abs(diff) > 1) {
       gravityAmount = abs(diff);
