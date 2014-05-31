@@ -7,6 +7,7 @@ AppWindow::AppWindow()
   // A utility class for constructing things that go into menus, which
   // we'll set up next.
   using Gtk::Menu_Helpers::MenuElem;
+  using Gtk::Menu_Helpers::RadioMenuElem; 
   
   // Set up the application menu
   // The slot we use here just causes AppWindow::hide() on this,
@@ -21,6 +22,16 @@ AppWindow::AppWindow()
   m_menubar.items().push_back(Gtk::Menu_Helpers::MenuElem("_Application", m_menu_app));
 
   //m_menu_mode.items().push_back(Radi 
+  sigc::slot1<void, int> setModeSlot = sigc::mem_fun(&m_viewer, &Viewer::setMode);   
+  Gtk::RadioMenuItem::Group radioGroupMode; 
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Translate", Gtk::AccelKey("n"),
+    sigc::bind(setModeSlot, 0)));
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Model Translate", Gtk::AccelKey("t"),
+    sigc::bind(setModeSlot, 1)));
+
+  m_menubar.items().push_back(Gtk::Menu_Helpers::MenuElem("_Mode", m_menu_mode));
   
   // Pack in our widgets
   

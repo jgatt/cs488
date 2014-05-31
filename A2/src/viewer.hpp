@@ -4,6 +4,7 @@
 #include <gtkmm.h>
 #include <gtkglmm.h>
 #include "algebra.hpp"
+#include <vector>
 
 // The "main" OpenGL widget
 class Viewer : public Gtk::GL::DrawingArea {
@@ -28,6 +29,9 @@ public:
   // original state. Set the viewport to its initial size.
   void reset_view();
 
+  //MY STUFF  
+  void setMode(int); 
+
 protected:
 
   // Events we implement
@@ -51,6 +55,9 @@ protected:
 
 private:
 
+  void drawPlane(Matrix4x4);
+  void userTransform(int); 
+
   // *** Fill me in ***
   // You will want to declare some more matrices here
   Matrix4x4 m_projection;
@@ -60,6 +67,8 @@ private:
 
   //Vectors and Points
   Point3D world_gnome;
+
+  std::vector<Point3D> m_box;
    
 };
 

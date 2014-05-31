@@ -3,6 +3,14 @@
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include "draw.hpp"
+#include "a2.hpp"
+
+using namespace std;
+
+double prevMouse = 0;
+int button_pressed = 0;
+
+int mode = 0;
 
 Viewer::Viewer()
 {
@@ -36,6 +44,14 @@ Viewer::Viewer()
   world_gnome[0] = 1;
   world_gnome[1] = 1;
   world_gnome[2] = 1; //set up at points 1,1,1?
+
+  m_box.push_back(Point3D(-1, -1, 0)); 
+  m_box.push_back(Point3D(-1, 1, 0)); 
+  m_box.push_back(Point3D(1, 1, 0)); 
+  m_box.push_back(Point3D(1, -1, 0)); 
+
+  //set up initial model transforms
+  m_model = translation(Vector3D(150, 150, 0)) * scaling(Vector3D(100, 100, 100)) * m_model;   
 }
 
 Viewer::~Viewer()
@@ -78,6 +94,37 @@ void Viewer::on_realize()
   gldrawable->gl_end();
 }
 
+void drawPlane(Matrix4x4 d) {
+  //draw_line();
+  //draw_line();
+}
+
+void Viewer::setMode(int m) {
+  mode = m; 
+}
+
+void Viewer::userTransform(int diff) {
+  Matrix4x4 m_transform;
+  Vector3D v_transform(0, 0, 0);
+  switch(mode) {
+    case 0:
+      //FOR NOW VIEW STUFF 
+      v_transform[button_pressed - 1] = diff;
+      m_transform = translation(v_transform);
+      m_viewing = m_transform * m_viewing;
+      break;
+    case 1: 
+      v_transform[button_pressed - 1] = diff;
+      m_transform = translation(v_transform);
+      m_model = m_transform * m_model;
+      break;
+    default: 
+      break;
+  }
+
+  invalidate();
+}
+
 bool Viewer::on_expose_event(GdkEventExpose* event)
 {
   Glib::RefPtr<Gdk::GL::Drawable> gldrawable = get_gl_drawable();
@@ -97,24 +144,51 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
 
   //draw the viewport
   
- draw_line(Point2D(0.05*get_width(), 0.05*get_height()), 
-    Point2D(0.05*get_width(), 0.95*get_height())); 
- draw_line(Point2D(0.95*get_width(), 0.05*get_height()), 
-    Point2D(0.95*get_width(), 0.95*get_height())); 
+ // draw_line(Point2D(0.05*get_width(), 0.05*get_height()), 
+ //    Point2D(0.05*get_width(), 0.95*get_height())); 
+ // draw_line(Point2D(0.95*get_width(), 0.05*get_height()), 
+ //    Point2D(0.95*get_width(), 0.95*get_height())); 
 
- draw_line(Point2D(0.05*get_width(), 0.05*get_height()), 
-    Point2D(0.95*get_width(), 0.05*get_height())); 
- draw_line(Point2D(0.05*get_width(), 0.95*get_height()), 
-    Point2D(0.95*get_width(), 0.95*get_height())); 
+ // draw_line(Point2D(0.05*get_width(), 0.05*get_height()), 
+ //    Point2D(0.95*get_width(), 0.05*get_height())); 
+ // draw_line(Point2D(0.05*get_width(), 0.95*get_height()), 
+ //    Point2D(0.95*get_width(), 0.95*get_height())); 
 
+  //Set up the points TEMPORARY
+  m_box[0] = Point3D(-1, -1, 0);
+  m_box[1] = Point3D(-1, 1, 0); 
+  m_box[2] = Point3D(1, 1, 0); 
+  m_box[3] = Point3D(1, -1, 0); 
 
+  //MODEL TRANSFORMATIONS
 
- //WORLD COORDINATES?
+  //View Transformations 
+  cout << m_viewing << endl;
+  //Calculate inverse of view transform
+  Matrix4x4 i_view = m_viewing.invert(); 
 
- //VIEW COORDINATES
+  //Transform all dem points
+  for (int i = 0; i < m_box.size(); i++) {
+    m_box[i] = i_view*m_model*m_box[i];
+  } 
 
- //Draw the gnome
-  draw_line(Point2D(0, 0), Point2D(world_gnome[0], world_gnome[1]));
+  cout << m_box[0] << endl;
+  cout << m_box[1] << endl;
+  cout << m_box[2] << endl;
+  cout << m_box[3] << endl;
+
+  //draw all dem points
+  for (int i =0; i < m_box.size(); i++) {
+    if (i < m_box.size() -1) {
+      draw_line(Point2D(m_box[i][0], m_box[i][1]), Point2D(m_box[i+1][0], m_box[i+1][1])); 
+    } else {
+      draw_line(Point2D(m_box[i][0], m_box[i][1]), Point2D(m_box[0][0], m_box[0][1])); 
+    }
+  } 
+
+  //draw random stuff
+  draw_line(Point2D(150, 150), Point2D(180, 150));
+  draw_line(Point2D(150, 150), Point2D(150, 180));
 
   draw_complete();
             
@@ -144,6 +218,8 @@ bool Viewer::on_configure_event(GdkEventConfigure* event)
 bool Viewer::on_button_press_event(GdkEventButton* event)
 {
   std::cerr << "Stub: Button " << event->button << " pressed" << std::endl;
+  button_pressed = event->button;
+  prevMouse = event->x;
   return true;
 }
 
@@ -156,5 +232,10 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 {
   std::cerr << "Stub: Motion at " << event->x << ", " << event->y << std::endl;
+
+  double diff = event->x - prevMouse;
+  userTransform(diff); 
+  prevMouse = event->x; 
+
   return true;
 }
