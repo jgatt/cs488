@@ -106,9 +106,9 @@ void Viewer::setMode(int m) {
 void Viewer::userTransform(int diff) {
   Matrix4x4 m_transform;
   Vector3D v_transform(0, 0, 0);
+  char axis[] = {'x', 'y', 'z'};
   switch(mode) {
     case 0:
-      //FOR NOW VIEW STUFF 
       v_transform[button_pressed - 1] = diff;
       m_transform = translation(v_transform);
       m_viewing = m_transform * m_viewing;
@@ -118,6 +118,17 @@ void Viewer::userTransform(int diff) {
       m_transform = translation(v_transform);
       m_model = m_transform * m_model;
       break;
+    case 2:
+      m_transform = rotation(diff, axis[button_pressed]);
+      m_model = m_transform * m_model;
+      break;
+    case 3:
+      v_transform[button_pressed - 1] = diff;
+      m_transform = scaling(v_transform);
+      m_model = m_transform * m_model;
+    case 4:
+      m_transform = rotation(diff, axis[button_pressed]);
+      m_viewing = m_transform * m_viewing;
     default: 
       break;
   }

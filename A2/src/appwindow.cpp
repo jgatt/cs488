@@ -31,6 +31,15 @@ AppWindow::AppWindow()
   m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Model Translate", Gtk::AccelKey("t"),
     sigc::bind(setModeSlot, 1)));
 
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Model Rotate", Gtk::AccelKey("r"),
+    sigc::bind(setModeSlot, 2)));
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Model Scale", Gtk::AccelKey("s"),
+    sigc::bind(setModeSlot, 3)));
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Rotate", Gtk::AccelKey("o"),
+    sigc::bind(setModeSlot, 4)));
+
   m_menubar.items().push_back(Gtk::Menu_Helpers::MenuElem("_Mode", m_menu_mode));
   
   // Pack in our widgets
