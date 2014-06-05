@@ -105,6 +105,53 @@ private:
   double v_[3];
 };
 
+class Point4D
+{
+public:
+  Point4D()
+  {
+    v_[0] = 0.0;
+    v_[1] = 0.0;
+    v_[2] = 0.0;
+    v_[3] = 0.0;
+  }
+  Point4D(double x, double y, double z, double w)
+  { 
+    v_[0] = x;
+    v_[1] = y;
+    v_[2] = z;
+    v_[3] = w;
+  }
+  Point4D(const Point4D& other)
+  {
+    v_[0] = other.v_[0];
+    v_[1] = other.v_[1];
+    v_[2] = other.v_[2];
+    v_[3] = other.v_[3];
+  }
+
+  Point4D& operator =(const Point4D& other)
+  {
+    v_[0] = other.v_[0];
+    v_[1] = other.v_[1];
+    v_[2] = other.v_[2];
+    v_[3] = other.v_[3];
+    return *this;
+  }
+
+  double& operator[](size_t idx) 
+  {
+    return v_[ idx ];
+  }
+  double operator[](size_t idx) const 
+  {
+    return v_[ idx ];
+  }
+
+private:
+  double v_[4];
+};
+
 class Vector3D
 {
 public:
@@ -220,6 +267,11 @@ inline std::ostream& operator <<(std::ostream& os, const Point2D& p)
 inline std::ostream& operator <<(std::ostream& os, const Point3D& p)
 {
   return os << "p<" << p[0] << "," << p[1] << "," << p[2] << ">";
+}
+
+inline std::ostream& operator <<(std::ostream& os, const Point4D& p)
+{
+  return os << "p<" << p[0] << "," << p[1] << "," << p[2] << "," << p[3] << ">";
 }
 
 inline std::ostream& operator <<(std::ostream& os, const Vector3D& v)
@@ -399,6 +451,15 @@ inline Point3D operator *(const Matrix4x4& M, const Point3D& p)
                  p[0] * M[0][0] + p[1] * M[0][1] + p[2] * M[0][2] + M[0][3],
                  p[0] * M[1][0] + p[1] * M[1][1] + p[2] * M[1][2] + M[1][3],
                  p[0] * M[2][0] + p[1] * M[2][1] + p[2] * M[2][2] + M[2][3]);
+}
+
+inline Point4D operator *(const Matrix4x4& M, const Point4D& p)
+{
+  return Point4D(
+                 p[0] * M[0][0] + p[1] * M[0][1] + p[2] * M[0][2] + p[3] * M[0][3],
+                 p[0] * M[1][0] + p[1] * M[1][1] + p[2] * M[1][2] + p[3] * M[1][3],
+                 p[0] * M[2][0] + p[1] * M[2][1] + p[2] * M[2][2] + p[3] * M[2][3],
+                 p[0] * M[3][0] + p[1] * M[3][1] + p[2] * M[3][2] + p[3] * M[3][3]);
 }
 
 inline Vector3D transNorm(const Matrix4x4& M, const Vector3D& n)

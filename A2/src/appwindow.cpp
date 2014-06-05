@@ -13,7 +13,7 @@ AppWindow::AppWindow()
   // The slot we use here just causes AppWindow::hide() on this,
   // which shuts down the application.
   m_menu_app.items().push_back(MenuElem("_Reset", Gtk::AccelKey("a"),
-    sigc::mem_fun(*this, &AppWindow::hide)));
+    sigc::mem_fun(&m_viewer, &Viewer::reset_view)));
 
   m_menu_app.items().push_back(MenuElem("_Quit", Gtk::AccelKey("q"),
     sigc::mem_fun(*this, &AppWindow::hide)));
@@ -39,6 +39,12 @@ AppWindow::AppWindow()
 
   m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Rotate", Gtk::AccelKey("o"),
     sigc::bind(setModeSlot, 4)));
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Perspective", Gtk::AccelKey("p"),
+    sigc::bind(setModeSlot, 5)));
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Viewport Mode", Gtk::AccelKey("v"),
+    sigc::bind(setModeSlot, 6)));
 
   m_menubar.items().push_back(Gtk::Menu_Helpers::MenuElem("_Mode", m_menu_mode));
   

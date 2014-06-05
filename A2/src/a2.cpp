@@ -40,7 +40,6 @@ Matrix4x4 translation(const Vector3D& displacement)
   t[0][3] = displacement[0]; 	
   t[1][3] = displacement[1];
   t[2][3] = displacement[2]; 
-  t[3][3] = 1; 
 
   // Fill me in!
   return t;
@@ -55,4 +54,19 @@ Matrix4x4 scaling(const Vector3D& scale)
   s[2][2] = scale[2];
   // Fill me in!
   return s;
+}
+
+Matrix4x4 perspective(double angle, double aspect, double near, double far) {
+  Matrix4x4 p;
+
+  double f =  1 / (tan(((angle/2.0) * M_PI) / 180.0));
+
+  p[0][0] = f / aspect;
+  p[1][1] = f;
+  p[2][2] = (far + near) / (near - far);
+  p[2][3] = (2*far*near) / (near - far);
+  p[3][2] = -1;
+  p[3][3] = 0;
+
+  return p; 
 }

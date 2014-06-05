@@ -57,19 +57,29 @@ private:
 
   void drawPlane(Matrix4x4);
   void userTransform(int); 
+  std::vector<Point2D> transformPoints(Point3D[]);
+  int clipInPlace(Point3D &A, Point3D &B);
 
   // *** Fill me in ***
   // You will want to declare some more matrices here
   Matrix4x4 m_projection;
-  Matrix4x4 m_model;
-  Matrix4x4 m_viewing;
   Matrix4x4 m_world;
+
+  Matrix4x4 m_model;
+  Matrix4x4 m_model_scaling;
+  Matrix4x4 m_model_translation;
+  Matrix4x4 m_model_rotation;
+  Matrix4x4 m_model_rotations[3];
+
+  Matrix4x4 m_viewing;
+  Matrix4x4 m_viewing_translation;
+  Matrix4x4 m_viewing_rotation;
+  Matrix4x4 m_viewing_rotations[3];
 
   //Vectors and Points
   Point3D world_gnome;
-
-  std::vector<Point3D> m_box;
-   
+  
+  Point3D m_box[6][4];   
 };
 
 #endif
