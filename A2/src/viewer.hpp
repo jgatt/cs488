@@ -57,8 +57,8 @@ private:
 
   void drawPlane(Matrix4x4);
   void userTransform(int); 
-  std::vector<Point2D> transformPoints(Point3D[]);
-  int clipInPlace(Point3D &A, Point3D &B);
+  std::vector<Point2D> transformPoints(Point3D[], int);
+  int clipInPlace(Point3D &A, Point3D &B, int face, bool mode);
 
   // *** Fill me in ***
   // You will want to declare some more matrices here
