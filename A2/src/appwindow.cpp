@@ -25,9 +25,6 @@ AppWindow::AppWindow()
   sigc::slot1<void, int> setModeSlot = sigc::mem_fun(&m_viewer, &Viewer::setMode);   
   Gtk::RadioMenuItem::Group radioGroupMode; 
 
-  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Translate", Gtk::AccelKey("n"),
-    sigc::bind(setModeSlot, 0)));
-
   m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Model Translate", Gtk::AccelKey("t"),
     sigc::bind(setModeSlot, 1)));
 
@@ -36,6 +33,9 @@ AppWindow::AppWindow()
 
   m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_Model Scale", Gtk::AccelKey("s"),
     sigc::bind(setModeSlot, 3)));
+
+  m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Translate", Gtk::AccelKey("n"),
+    sigc::bind(setModeSlot, 0)));
 
   m_menu_mode.items().push_back(RadioMenuElem(radioGroupMode, "_View Rotate", Gtk::AccelKey("o"),
     sigc::bind(setModeSlot, 4)));
@@ -60,6 +60,9 @@ AppWindow::AppWindow()
   // by default, so it'll take up the rest of the window.
   m_viewer.set_size_request(300, 300);
   m_vbox.pack_start(m_viewer);
+
+  m_viewer.label.set_size_request(300, 25);
+  m_vbox.pack_start(m_viewer.label);
 
   show_all();
 }

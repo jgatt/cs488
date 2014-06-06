@@ -8,9 +8,11 @@
 using namespace std;
 
 double prevMouse = 0;
-int button_pressed = 0;
+int button_pressed[] = {0, 0, 0};
 
-Vector3D scale_factor(0.5, 0.5, 0.5);
+Vector3D scale_factor(1.0, 1.0, 1.0);
+
+double aspect = 1.0;
 
 double vangle = 30.0;
 double near = 1;
@@ -19,7 +21,7 @@ double far = 10;
 double model_rotation[] = {0, 0, 0};
 double view_rotation[] = {0, 0, 0};
 
-int mode = 0;
+int mode = 1;
 
 int xmin = 30;
 int xmax = 270;
@@ -27,6 +29,16 @@ int ymin = 30;
 int ymax = 270;
 
 int tempMouseOne[] = {0, 0};
+
+string labels[] = {
+  "View Translate",
+  "Model Translate",
+  "Model Rotate",
+  "Model Scale",
+  "View Rotate",
+  "View Perspective",
+  "Viewport Mode"
+};
 
 Point3D cube_lines[][2] = {
   {Point3D(-1, -1, -1), Point3D(-1, 1, -1)},
@@ -52,13 +64,13 @@ Point3D cube_lines[][2] = {
 
 Point3D model_coords[][2] = {
   {Point3D(0, 0, 0), Point3D(0.5, 0, 0)},
-  {Point3D(0, 0, 0), Point3D(0, 0.5, 0)},
+  {Point3D(0, 0, 0), Point3D(0, -0.5, 0)},
   {Point3D(0, 0, 0), Point3D(0, 0, 0.5)}
 };
 
 Point3D world_coords[][2] = {
   {Point3D(0, 0, 0), Point3D(0.5, 0, 0)},
-  {Point3D(0, 0, 0), Point3D(0, 0.5, 0)},
+  {Point3D(0, 0, 0), Point3D(0, -0.5, 0)},
   {Point3D(0, 0, 0), Point3D(0, 0, 0.5)}
 };
 
@@ -92,8 +104,12 @@ Viewer::Viewer()
 
 
   m_model_scaling = scaling(scale_factor); 
-  m_model_translation = translation(Vector3D(0, 0, -2));
+  m_model_translation = translation(Vector3D(0, 0, 0));
   m_model = m_model_translation * m_model_scaling * m_model;
+
+  m_viewing_translation = translation(Vector3D(0, 0, 4)); 
+  m_viewing = m_viewing_translation;
+  label.set_text(labels[1]);
 }
 
 Viewer::~Viewer()
@@ -120,7 +136,7 @@ void Viewer::reset_view()
   vangle = 30.0;
   near = 1;
   far = 10;
-  scale_factor = Vector3D(0.5, 0.5, 0.5);
+  scale_factor = Vector3D(1.0, 1.0, 1.0);
 
   for (int i = 0; i < 3; i++){
       model_rotation[i] = 0;
@@ -133,12 +149,15 @@ void Viewer::reset_view()
   m_model_rotation = Matrix4x4();
 
   m_model_scaling = scaling(scale_factor); 
-  m_model_translation = translation(Vector3D(0, 0, -2));
+  m_model_translation = translation(Vector3D(0, 0, 0));
 
   m_model = m_model_translation * m_model_scaling * m_model_rotation;
 
-  m_viewing_translation = Matrix4x4();
+  m_viewing_translation = translation(Vector3D(0, 0, 4)); 
   m_viewing = m_viewing_translation * m_viewing_rotation;
+
+  xmin = 0.1*get_width(); ymin = 0.1*get_height();
+  xmax = 0.9*get_width(); ymax = 0.9*get_height(); 
 
   invalidate();
 }
@@ -162,63 +181,79 @@ void Viewer::on_realize()
 
 void Viewer::setMode(int m) {
   mode = m; 
+  label.set_text(labels[m]);
 }
 
 void Viewer::userTransform(int diff) {
   Matrix4x4 m_transform;
   Vector3D v_transform(0, 0, 0);
   char axis[] = {'x', 'y', 'z'};
-  switch(mode) {
-    case 0:
-      v_transform[button_pressed - 1] = diff / 100.0;
-      m_transform = translation(v_transform);
-      m_viewing_translation = m_transform * m_viewing_translation;
-      break;
-    case 1: 
-      v_transform[button_pressed - 1] = diff / 100.0;
-      m_transform = translation(v_transform);
-      m_model_translation = m_transform * m_model_translation;
-      break;
-    case 2:
-      model_rotation[button_pressed -1] += diff;
-      m_model_rotations[button_pressed - 1] = rotation(model_rotation[button_pressed -1], axis[button_pressed - 1]);
-      m_model_rotation = m_model_rotations[0] * m_model_rotations[1] * m_model_rotations[2]; 
-      break;
-    case 3:
-      scale_factor[button_pressed -1] += diff / 100.0;
-      if (scale_factor[button_pressed -1] > 1.5) {
-        scale_factor[button_pressed -1] = 1.5;
-      } else if (scale_factor[button_pressed -1] < 0.05) {
-        scale_factor[button_pressed -1] = 0.05;
-      }
 
-      m_model_scaling = scaling(scale_factor);
-      break;
-    case 4:
-      view_rotation[button_pressed -1] += diff ;
-      m_viewing_rotations[button_pressed - 1] = rotation(view_rotation[button_pressed -1], axis[button_pressed - 1]);
-      m_viewing_rotation = m_viewing_rotations[0] * m_viewing_rotations[1] * m_viewing_rotations[2]; 
-      break;
-    case 5:
-      if (button_pressed == 1) {
-        vangle += diff; 
-        if (vangle < 5) {
-          vangle = 5;
-        } else if (vangle > 160) {
-          vangle = 160;
+  //loop for all possible buttons
+  for (int i = 0; i < 3; i++) {
+    if (button_pressed[i] == 0) {
+      continue;
+    }
+
+    switch(mode) {
+      case 0:
+        v_transform[i] = diff / 100.0;
+        m_transform = translation(v_transform);
+        m_viewing_translation = m_transform * m_viewing_translation;
+        break;
+      case 1: 
+        v_transform[i] = diff / 100.0;
+        m_transform = translation(v_transform);
+        m_model_translation = m_transform * m_model_translation;
+        break;
+      case 2:
+        model_rotation[i] += diff;
+        m_model_rotations[i] = rotation(model_rotation[i], axis[i]);
+        m_model_rotation = m_model_rotations[0] * m_model_rotations[1] * m_model_rotations[2]; 
+        break;
+      case 3:
+        scale_factor[i] += diff / 100.0;
+        if (scale_factor[i] > 1.5) {
+          scale_factor[i] = 1.5;
+        } else if (scale_factor[i] < 0.05) {
+          scale_factor[i] = 0.05;
         }
-      } else if (button_pressed == 2) {
-        near += diff / 100.0; 
-      } else if (button_pressed == 3) {
-        far += diff + 100.0;
-      }
-      break;
-    default: 
-      break;
+        m_model_scaling = scaling(scale_factor);
+        break;
+      case 4:
+        view_rotation[i] += diff ;
+        m_viewing_rotations[i] = rotation(view_rotation[i], axis[i]);
+        m_viewing_rotation = m_viewing_rotations[0] * m_viewing_rotations[1] * m_viewing_rotations[2]; 
+        break;
+      case 5:
+        if (i == 0) {
+          vangle += diff; 
+          if (vangle < 5) {
+            vangle = 5;
+          } else if (vangle > 160) {
+            vangle = 160;
+          }
+        } else if (i == 1) {
+          near += diff / 10.0; 
+          if (near < 0) {
+            near = 0;
+          } else if (near > far - 1) {
+            near = far - 1;
+          }
+
+        } else if (i == 2) {
+          far += diff / 10.0;
+          if (far < near + 1) {
+            far = near + 1;
+          }
+        }
+        break;
+      default: 
+        break;
+    }
   }
 
-  m_model = m_model_translation *  m_model_rotation * m_model_scaling;
-  m_viewing = m_viewing_translation * m_viewing_rotation; 
+  
 
   invalidate();
 }
@@ -246,7 +281,7 @@ int bitRep(Point3D A, bool mode2d) {
   return bit; 
 }
 
-void temp(Point3D &A, Point3D &B, int bit1, int bit2, int check_bit, double clip_value) {
+void calculateClippedPoints(Point3D &A, Point3D &B, int bit1, int bit2, int check_bit, double clip_value) {
   Point3D *in;
   Point3D *out;
 
@@ -297,7 +332,7 @@ void temp(Point3D &A, Point3D &B, int bit1, int bit2, int check_bit, double clip
   
 }
 
-int Viewer::clipInPlace(Point3D &A, Point3D &B, int face, bool mode2d) {
+int Viewer::clip(Point3D &A, Point3D &B, int face, bool mode2d) {
   int bit1 = bitRep(A, mode2d); 
   int bit2 = bitRep(B, mode2d); 
   int clip_values[] = {0, ymax, ymin, xmax, xmin, -far, -near}; 
@@ -307,9 +342,8 @@ int Viewer::clipInPlace(Point3D &A, Point3D &B, int face, bool mode2d) {
   } else if ((bit1 & bit2) != 0) {
     return 0;
     } else {
-    cout << "THERE IS AN INTERSECTION POINT" << endl;
     if ((bit1 & (1 << face)) || (bit2 & (1 << face))) {
-      temp(A, B, bit1, bit2, face, clip_values[face]);
+      calculateClippedPoints(A, B, bit1, bit2, face, clip_values[face]);
     }
 
     return 1;
@@ -324,52 +358,42 @@ void viewPortMap(Point3D &p) {
 vector<Point2D> Viewer::transformPoints(Point3D box_line[], int mode) {
   vector<Point2D> drawPoints;
   Matrix4x4 project = perspective(vangle, 1, near, far);
-  Matrix4x4 model;
+  Matrix4x4 model, viewing;
 
   if (mode == 0) {
-    model = m_model_translation * m_model_rotation;
+    model = m_model_rotation * m_model_translation;
   } else if (mode == 1) {
-    model = m_model_translation *  m_model_rotation * m_model_scaling;
+    model = m_model_rotation * m_model_translation * m_model_scaling;
   } 
+
+  viewing = m_viewing_translation * m_viewing_rotation; 
 
   Point3D point1 = box_line[0]; 
   Point3D point2 = box_line[1]; 
 
-  cout << "0 p1: " << point1 << " p2: " << point2 << endl;
+  point1 = viewing.invert()*model*point1; 
+  point2 = viewing.invert()*model*point2; 
 
-  point1 = m_viewing.invert()*model*point1; 
-  point2 = m_viewing.invert()*model*point2; 
-
-  cout << "1 p1: " << point1 << " p2: " << point2 << endl;
-
-  if (clipInPlace(point1, point2, 6, 0) == 0) {
-    cout << "rejected!" << endl;
+  if ((clip(point1, point2, 6, 0) == 0) || (clip(point1, point2, 5, 0) == 0)) {
     return drawPoints;
   }
 
   double w1 = -1*point1[2];
   double w2 = -1*point2[2];
 
-  cout << "2 p1: " << point1 << " p2: " << point2 << " w: " << w1 << " w2: " << w2 << endl;
-
   point1 = project*point1; 
   point2 = project*point2; 
-
-  cout << "3 p1: " << point1 << " p2: " << point2 << " w: " << w1 << " w2: " << w2 << endl;
 
   for (int i = 0; i < 4; i++) {
     point1[i] = point1[i] / w1;
     point2[i] = point2[i] / w2;
   }
 
-  cout << "4 p1: " << point1 << " p2: " << point2 << " w: " << w1 << " w2: " << w2 << endl;
-
   viewPortMap(point1);
   viewPortMap(point2);
 
   for (int i = 1; i < 6; i++) {
-    if (clipInPlace(point1, point2, i, 1) == 0) {
-      cout << "rejected2!" << endl;
+    if (clip(point1, point2, i, 1) == 0) {
       return drawPoints;
     }
   } 
@@ -394,7 +418,6 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
   draw_init(get_width(), get_height());
   
   /* A few of lines are drawn below to show how it's done. */
-
   set_colour(Colour(0.1, 0.1, 0.1));
 
   //draw the viewport
@@ -404,15 +427,19 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
   draw_line(Point2D(xmax, ymax), Point2D(xmin, ymax));
   draw_line(Point2D(xmax, ymax), Point2D(xmax, ymin));
 
+
+  set_colour(Colour(1.0, 0, 0));
+
   //Transform all dem points
-  cout << "DRAW POINTS" << endl;
   for (int i = 0; i < 16; i++) {
-    cout << "NEW POINTS: " << endl;
     vector<Point2D> drawPoints = transformPoints(cube_lines[i], 1); 
     if (drawPoints.size() == 2) {
       draw_line(drawPoints[0], drawPoints[1]);
     }
   }
+
+
+  set_colour(Colour(0, 1.0, 0));
 
   //draw gnomes
   for (int i = 0; i < 3; i++) {
@@ -422,15 +449,14 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
     }
   }
 
+  set_colour(Colour(0, 0, 1.0));
+
   for (int i = 0; i < 3; i++) {
-    vector<Point2D> drawPoints = transformPoints(world_coords[i], 0); 
+    vector<Point2D> drawPoints = transformPoints(world_coords[i], 2); 
     if (drawPoints.size() == 2) {
       draw_line(drawPoints[0], drawPoints[1]);
     }
   }
-
-  //draw_line(Point2D(150, 150), Point2D(180, 150));
-  //draw_line(Point2D(150, 150), Point2D(150, 180));
 
   draw_complete();
             
@@ -452,6 +478,8 @@ bool Viewer::on_configure_event(GdkEventConfigure* event)
   if (!gldrawable->gl_begin(get_gl_context()))
     return false;
 
+  aspect = get_width() / get_height();
+
   gldrawable->gl_end();
 
   return true;
@@ -459,7 +487,8 @@ bool Viewer::on_configure_event(GdkEventConfigure* event)
 
 bool Viewer::on_button_press_event(GdkEventButton* event)
 {
-  button_pressed = event->button;
+  std::cerr << "Stub: Button " << event->button << " pressed" << std::endl;
+  button_pressed[event->button - 1] = 1;
   prevMouse = event->x;
 
   if (mode == 6) {
@@ -473,6 +502,8 @@ bool Viewer::on_button_press_event(GdkEventButton* event)
 bool Viewer::on_button_release_event(GdkEventButton* event)
 {
   std::cerr << "Stub: Button " << event->button << " released" << std::endl;
+
+  button_pressed[event->button - 1] = 0;
 
   if (mode == 6) {
     if (event->x < tempMouseOne[0]) {
@@ -489,6 +520,20 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
     } else {
       ymax = event->y;
       ymin = tempMouseOne[1];
+    }
+
+    if (xmin < 0) {
+      xmin = 0;
+    }
+    if (xmax > get_width()) {
+      xmax = get_width();
+    }
+
+    if (ymin < 0) {
+      ymin = 0;
+    }
+    if (ymax > get_height()) {
+      ymax = get_height();
     }
 
     invalidate(); 

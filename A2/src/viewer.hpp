@@ -32,6 +32,8 @@ public:
   //MY STUFF  
   void setMode(int); 
 
+  Gtk::Label label;
+
 protected:
 
   // Events we implement
@@ -58,7 +60,7 @@ private:
   void drawPlane(Matrix4x4);
   void userTransform(int); 
   std::vector<Point2D> transformPoints(Point3D[], int);
-  int clipInPlace(Point3D &A, Point3D &B, int face, bool mode);
+  int clip(Point3D &A, Point3D &B, int face, bool mode);
 
   // *** Fill me in ***
   // You will want to declare some more matrices here
@@ -80,6 +82,8 @@ private:
   Point3D world_gnome;
   
   Point3D m_box[6][4];   
+
+
 };
 
 #endif
