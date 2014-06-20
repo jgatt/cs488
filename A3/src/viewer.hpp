@@ -29,6 +29,10 @@ public:
 
   void undo();
   void redo();
+  void reset_position();
+  void reset_orientation();
+  void reset_joints();
+  void reset_all();
 protected:
 
   // Events we implement

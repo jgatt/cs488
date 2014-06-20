@@ -166,6 +166,29 @@ void SceneNode::redoChange() {
   }
 }
 
+void JointNode::reset_joints() {
+  while (undoStack.size() > 1) {
+    undoStack.pop_back();
+  }
+
+  stack_pointer = 0;
+  m_trans = undoStack[stack_pointer].m_trans;
+  rotateAngleX = undoStack[stack_pointer].rotateX;
+  rotateAngleY = undoStack[stack_pointer].rotateY;
+  
+  SceneNode::reset_joints();
+}
+
+void SceneNode::reset_joints() {
+  for (ChildList::const_iterator ci = m_children.begin(); ci != m_children.end(); ++ci) {
+    (*ci)->reset_joints();
+  }
+}
+
+void SceneNode::reset(Matrix4x4 reset) {
+  m_trans = reset; 
+}
+
 void JointNode::redoChange() {
   if (stack_pointer < undoStack.size() -1) {
     stack_pointer += 1;

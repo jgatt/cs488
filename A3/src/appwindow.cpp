@@ -16,16 +16,16 @@ AppWindow::AppWindow(string filename)
   // The slot we use here just causes AppWindow::hide() on this,
   // which shuts down the application.
   m_menu_app.items().push_back(MenuElem("_Reset Position", Gtk::AccelKey("i"),
-    sigc::mem_fun(*this, &AppWindow::hide)));
+    sigc::mem_fun(&m_viewer, &Viewer::reset_position)));
 
   m_menu_app.items().push_back(MenuElem("_Reset Orientation", Gtk::AccelKey("o"),
-    sigc::mem_fun(*this, &AppWindow::hide)));
+    sigc::mem_fun(&m_viewer, &Viewer::reset_orientation)));
 
   m_menu_app.items().push_back(MenuElem("_Reset Joints", Gtk::AccelKey("n"),
-    sigc::mem_fun(*this, &AppWindow::hide)));
+    sigc::mem_fun(&m_viewer, &Viewer::reset_joints)));
 
   m_menu_app.items().push_back(MenuElem("_Reset All", Gtk::AccelKey("a"),
-    sigc::mem_fun(*this, &AppWindow::hide)));
+    sigc::mem_fun(&m_viewer, &Viewer::reset_all)));
   
   m_menu_app.items().push_back(MenuElem("_Quit", Gtk::AccelKey("q"),
     sigc::mem_fun(*this, &AppWindow::hide)));

@@ -24,6 +24,8 @@ public:
   virtual void saveChange(); 
   virtual void undoChange(); 
   virtual void redoChange(); 
+  virtual void reset_joints(); 
+  void reset(Matrix4x4);
 
   const Matrix4x4& get_transform() const { return m_trans; }
   const Matrix4x4& get_inverse() const { return m_invtrans; }
@@ -95,6 +97,7 @@ public:
   virtual void saveChange(); 
   virtual void undoChange(); 
   virtual void redoChange(); 
+  virtual void reset_joints(); 
 
   virtual bool is_joint() const;
 

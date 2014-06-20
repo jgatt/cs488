@@ -28,7 +28,7 @@ rootnode:add_child(hinode)
 hinode:translate(0, -1.4, 0)
 
 -- HEAD STUFF START
-nb = gr.joint("Neck Bottom", {-75.0, 0, 75.0}, {-90.0, 0, 90.0})
+nb = gr.joint("Neck Bottom", {-15.0, 0, 15.0}, {-90.0, 0, 90.0})
 shnode:add_child(nb)
 nb:translate(0, 0.4, 0)
 
@@ -46,10 +46,13 @@ nt:add_child(head)
 head:scale(0.9, 0.9, 1)
 head:set_material(white)
 
+nose_node = gr.node("Nose Node")
+nt:add_child(nose_node)
+nose_node:translate(0, 0, 1)
+
 nose = gr.sphere("Nose")
-nt:add_child(nose)
+nose_node:add_child(nose)
 nose:scale(0.2, 0.2, 1)
-nose:translate(0, 0, 1)
 nose:set_material(green)
 -- HEAD STUFF END
 

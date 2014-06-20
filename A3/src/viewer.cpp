@@ -26,6 +26,8 @@ bool cOn = false;
 
 bool somethingChanged = false;
 
+Matrix4x4 rootStart;
+
 Viewer::Viewer()
 {
   Glib::RefPtr<Gdk::GL::Config> glconfig;
@@ -66,6 +68,7 @@ void Viewer::load_lua(string filename) {
     std::cerr << "Could not open " << filename << std::endl;
   }
   root->saveChange();
+  rootStart = root->get_transform(); 
 }
 
 void Viewer::setMode(int m) {
@@ -155,7 +158,6 @@ void Viewer::on_realize()
   glEnable(GL_DEPTH_TEST);
   glEnable (GL_LIGHTING);
   glEnable (GL_LIGHT0);
- //glEnable(GL_COLOR_MATERIAL);
 
   gldrawable->gl_end();
 }
@@ -251,12 +253,14 @@ bool Viewer::on_expose_event(GdkEventExpose* event)
   glEnable (GL_LIGHT0);
 
   // Draw stuff
+  glEnable(GL_NORMALIZE);
   root->walk_gl(false); 
 
   if (cOn) {
     draw_trackball_circle();
   }
 
+  glDisable(GL_NORMALIZE);
   // Swap the contents of the front and back buffers so we see what we
   // just drew. This should only be done if double buffering is enabled.
   gldrawable->swap_buffers();
@@ -304,6 +308,26 @@ void Viewer::redo() {
   invalidate();
 }
 
+void Viewer::reset_position() {
+  root->reset(rootStart);
+  invalidate();
+}
+
+void Viewer::reset_orientation() {
+  invalidate();
+}
+
+void Viewer::reset_joints() {
+  root->reset_joints(); 
+  invalidate();
+}
+
+void Viewer::reset_all() {
+  root->reset(rootStart); 
+  root->reset_joints(); 
+  invalidate();
+}
+
 bool Viewer::on_button_press_event(GdkEventButton* event)
 {
   std::cerr << "Stub: Button " << event->button << " pressed" << std::endl;
@@ -334,12 +358,17 @@ bool Viewer::on_button_release_event(GdkEventButton* event)
 bool Viewer::on_motion_notify_event(GdkEventMotion* event)
 {
   std::cerr << "Stub: Motion at " << event->x << ", " << event->y << std::endl;
-  if (mode == 1) {
+  if (mode == 1 && buttonPressed[0]) {
     double diffx = (event->x - previousX) / 100.0f;
     double diffy = (event->y - previousY) / -100.0f;
 
     root->translate(Vector3D(diffx, diffy, 0));
   } 
+  if (mode == 1 && buttonPressed[1]) {
+    double diffy = (event->y - previousY) / -100.0f;
+
+    root->translate(Vector3D(0, 0, diffy));
+  }
 
   if (mode == 2 && buttonPressed[1]) {
     somethingChanged = true;

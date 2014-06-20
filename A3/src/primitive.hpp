@@ -2,6 +2,8 @@
 #define CS488_PRIMITIVE_HPP
 
 #include "algebra.hpp"
+#include <GL/gl.h>
+#include <GL/glu.h>
 
 class Primitive {
 public:

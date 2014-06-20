@@ -41,6 +41,6 @@ void PhongMaterial::apply_gl(bool picked) const
 		glMaterialfv(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, paramskd);
 	}
 	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, m_shininess);
-	//glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, paramsks);
+	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, paramsks);
 }
 
