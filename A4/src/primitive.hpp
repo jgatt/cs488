@@ -24,7 +24,7 @@ public:
 class NonhierSphere : public Primitive {
 public:
   NonhierSphere(const Point3D& pos, double radius)
-    : m_pos(pos), m_radius(radius)
+    : m_pos(pos), m_radius(radius), trans_pos(pos)
   {
   }
   virtual ~NonhierSphere();
@@ -32,6 +32,7 @@ public:
 
 private:
   Point3D m_pos;
+  Point3D trans_pos;
   double m_radius;
 };
 

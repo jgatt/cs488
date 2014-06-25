@@ -18,20 +18,36 @@ SceneNode::~SceneNode()
 {
 }
 
-void SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3D &ret, Vector3D& normal) {
+SceneNode* SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3D &retInt, Vector3D& retNormal) {
+  Point3D intPoint; 
+  Vector3D intNormal;
+  SceneNode *ret, *temp;
+
+  Point3D tempEye = m_invtrans * eye;
+  Vector3D tempDir = m_invtrans * rayDir;
+
   for (ChildList::const_iterator ci = m_children.begin(); ci != m_children.end(); ++ci) {
-    (*ci)->calculateIntersection(eye, rayDir, ret, normal);
+    temp = (*ci)->calculateIntersection(tempEye, tempDir, intPoint, intNormal);
+
+    if (intPoint[0] != 0 || intPoint[1] != 0 || intPoint[2] != 0) {
+      if ((eye - intPoint).length() < (eye - retInt).length()) {
+        retInt = m_trans * intPoint;
+        retNormal = m_invtrans.transpose() * intNormal;
+	retNormal.normalize();
+        ret = temp;
+      }
+    }
   }
+
+  return ret;
 }
 
-void GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3D &ret, Vector3D& normal) {
+SceneNode* GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3D &ret, Vector3D& normal) {
   m_primitive->intersection(eye, rayDir, ret, normal);
+  return this;
 }
 
 void SceneNode::calculateColour(Colour ambiant, Colour diffuse, Colour specular, Colour &ret) {
-  for (ChildList::const_iterator ci = m_children.begin(); ci != m_children.end(); ++ci) {
-    (*ci)->calculateColour(ambiant, diffuse, specular, ret);
-  }
 }
 
 void GeometryNode::calculateColour(Colour ambiant, Colour diffuse, Colour specular, Colour &ret) {
@@ -65,7 +81,7 @@ void SceneNode::rotate(char axis, double angle)
       default:
         break;
     }
-    m_trans = m_trans*r;
+    set_transform(m_trans*r);
 }
 
 void SceneNode::scale(const Vector3D& amount)
@@ -77,7 +93,7 @@ void SceneNode::scale(const Vector3D& amount)
   s[1][1] = amount[1];
   s[2][2] = amount[2];
 
-  m_trans = m_trans*s;
+  set_transform(m_trans*s);
 }
 
 void SceneNode::translate(const Vector3D& amount)
@@ -88,7 +104,7 @@ void SceneNode::translate(const Vector3D& amount)
   t[2][3] = amount[2];
   std::cerr << "Stub: Translate " << m_name << " by " << amount << std::endl;
 
-  m_trans = m_trans*t; 
+  set_transform(m_trans*t);
 }
 
 bool SceneNode::is_joint() const

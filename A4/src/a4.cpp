@@ -60,18 +60,18 @@ void a4_render(// What to render
   Image img(width, height, 3);
 
   double worldWidth, worldHeight, d;
-  d = 30.0;
+  d = 500.0;
   worldHeight = 2*d*tan(((fov/2.0) * M_PI) / 180.0); 
   worldWidth = ((double)width / (double)height) * worldHeight;
 
   cout << "ww: " << worldWidth  << " wh: " << worldHeight << endl;
+  SceneNode* temp;
 
   for (int y = 0; y < height; y++) {
     for (int x = 0; x < width; x++) {
 
       Point3D rayImage = Point3D(x, y, 0);  
 
-      //d = 50 for now
       rayImage[0] += (-width / 2);
       rayImage[1] += (-height / 2);
       rayImage[2] += d;
@@ -81,9 +81,6 @@ void a4_render(// What to render
 
       Vector3D u, v, w;
 
-      //Point3D lookat = Point3D(x, y, 0);
-      //w = lookat - eye; 
-      //w.normalize();
       w = view;
       u = w.cross(up);
       v = u.cross(w);
@@ -103,16 +100,9 @@ void a4_render(// What to render
       Point3D intPoint; 
       Vector3D normal;
       Colour pixel = Colour(0);
-      root->calculateIntersection(eye, rayDir, intPoint, normal); 
-
-      if (x == 10 && y == 40) {
-        cout << rayImage << endl;
-        cout << rayDir << endl;
-        cout << intPoint << endl;
-      }
-
+      temp = root->calculateIntersection(eye, rayDir, intPoint, normal); 
       if (intPoint[0] != 0 || intPoint[1] != 0 || intPoint[2] != 0) {
-        cout << intPoint << endl;
+        //cout << intPoint << endl;
 
         //check lights
         for (std::list<Light*>::const_iterator I = lights.begin(); I != lights.end(); ++I) {
@@ -153,23 +143,13 @@ void a4_render(// What to render
           }
 
           Colour specular = pow(ndoth, 20) * iS;
-          root->calculateColour(iA, diffuse, specular, pixel); 
-          if (ndotlight > 0) {
-            // cout << "ndotlight: " << ndotlight << " ndoth: " << ndoth << endl; 
-            // cout << "iA: " << iA << " iD=iS: " << iS << endl;
-            // cout << "diffuse: " << diffuse << " specular: " << specular << endl;
-            // cout << pixel << endl;
-          }
+          temp->calculateColour(iA, diffuse, specular, pixel); 
         }
       }
       img(x, (height - y), 0) = pixel.R();
       img(x, (height - y), 1) = pixel.G();
       img(x, (height - y), 2) = pixel.B();
-      // img(x, y, 0) = colour[0]; 
-      // img(x, y, 1) = colour[1]; 
-      // img(x, y, 2) = colour[2]; 
     }
-    //break;
   }
   img.savePng(filename);
   

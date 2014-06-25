@@ -21,7 +21,7 @@ public:
   const Matrix4x4& get_transform() const { return m_trans; }
   const Matrix4x4& get_inverse() const { return m_invtrans; }
 
-  virtual void calculateIntersection(Point3D eye, Vector3D rayDir, Point3D& ret, Vector3D&);
+  virtual SceneNode* calculateIntersection(Point3D eye, Vector3D rayDir, Point3D& ret, Vector3D&);
   virtual void calculateColour(Colour ambiant, Colour Diffuse, Colour specular, Colour &ret);
   
   void set_transform(const Matrix4x4& m)
@@ -100,7 +100,7 @@ public:
                Primitive* primitive);
   virtual ~GeometryNode();
 
-  virtual void calculateIntersection(Point3D eye, Vector3D rayDir, Point3D& ret, Vector3D&);
+  virtual SceneNode* calculateIntersection(Point3D eye, Vector3D rayDir, Point3D& ret, Vector3D&);
   virtual void calculateColour(Colour ambiant, Colour Diffuse, Colour specular, Colour &ret);
   const Material* get_material() const;
   Material* get_material();
