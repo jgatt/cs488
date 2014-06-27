@@ -52,7 +52,7 @@ bool Mesh::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D
     }
   }
 
-  if (t <= 1.0) {
+  if (t <= 1.0) {// && t > pow(10, -2)) {
     ret = t;
     return true;
   }

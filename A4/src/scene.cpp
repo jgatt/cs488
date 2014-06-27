@@ -21,8 +21,6 @@ SceneNode::~SceneNode()
 bool SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, double &t, Point3D& retPoint, Vector3D& retNormal, Colour &kd, Colour &ks, double &shin) {
   Point3D tempEye = m_invtrans * eye;
   Vector3D tempDir = m_invtrans * rayDir;
-  // Point3D tempEye = eye;
-  // Vector3D tempDir = rayDir; 
   Vector3D intNormal;
   Point3D intPoint;
 

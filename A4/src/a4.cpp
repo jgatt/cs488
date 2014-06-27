@@ -39,7 +39,7 @@ Colour directLight(Point3D intersection, Vector3D normal, Light *light, SceneNod
   //}
 }
 
-Colour ray_colour(Point3D rayOrigin, Vector3D rayDir, Light *light, SceneNode *root, Colour ambient, Colour background) {
+Colour ray_colour(Point3D rayOrigin, Vector3D rayDir, Light *light, SceneNode *root, Colour ambient, Colour background, int numBounces) {
   Colour colour;
   Colour kd, ks;
   Vector3D normal;
@@ -54,7 +54,6 @@ Colour ray_colour(Point3D rayOrigin, Vector3D rayDir, Light *light, SceneNode *r
 
       Vector3D lightVect = light->position - intPoint;
       double distance = lightVect.length();
-      //lightVect.normalize();
 
       Colour iA = ambient; 
       double attenuation = 1 / (light->falloff[0] + (light->falloff[1] * distance) + (light->falloff[2] * (distance * distance))); 
@@ -94,13 +93,17 @@ Colour ray_colour(Point3D rayOrigin, Vector3D rayDir, Light *light, SceneNode *r
       } 
 
       if (ks.R() != 0 || ks.B() != 0 || ks.G() != 0) { //has k
+        //colour = colour + specular*ks*iS;
+      } 
+
+      if (shin > 0 && numBounces < 25) {
         Vector3D reflection = rayDir - 2*rayDir.dot(normal)*normal;
-        colour = colour + specular*ks*iS;
+        colour = colour + 0.4*ks*iS*ray_colour(intPoint, reflection, light, root, ambient, background, numBounces+1);
       } 
 
       return colour;
     } else {
-      return Colour(0, 0, 1.0);
+      return background; 
     }
 
     return colour;
@@ -176,8 +179,8 @@ void a4_render(// What to render
       rayImage[1] += (-height / 2);
       rayImage[2] += d;
 
-      rayImage[0] *= (-worldHeight / height); 
-      rayImage[1] *= (worldWidth / width); 
+      rayImage[0] *= (worldWidth / width); 
+      rayImage[1] *= (worldHeight / height); 
 
       Vector3D u, v, w;
 
@@ -203,10 +206,10 @@ void a4_render(// What to render
       Colour kd, ks, ke;
       double t = 1;
 
-      Colour background = Colour(x / 255.0, y / 255.0, (x + y) / 255.0); 
+      Colour background = Colour(0, 0, y / (double)width); 
 
       for (std::list<Light*>::const_iterator I = lights.begin(); I != lights.end(); ++I) {
-        pixel = pixel + ray_colour(eye, rayDir, (*I), root, ambient, background);
+        pixel = pixel + ray_colour(eye, rayDir, (*I), root, ambient, background, 0);
       }
 
       img(x, y, 0) = pixel.R();
