@@ -18,23 +18,33 @@ SceneNode::~SceneNode()
 {
 }
 
-SceneNode* SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3D &retInt, Vector3D& retNormal) {
-  Point3D intPoint; 
-  Vector3D intNormal;
-  SceneNode *ret, *temp;
-
+bool SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, double &t, Point3D& retPoint, Vector3D& retNormal, Colour &kd, Colour &ks, double &shin) {
   Point3D tempEye = m_invtrans * eye;
   Vector3D tempDir = m_invtrans * rayDir;
+  // Point3D tempEye = eye;
+  // Vector3D tempDir = rayDir; 
+  Vector3D intNormal;
+  Point3D intPoint;
 
+  double tempT = 0; double tempShin = 0; 
+  Colour tempKd, tempKs, tempKe; 
+
+  bool ret = false; 
   for (ChildList::const_iterator ci = m_children.begin(); ci != m_children.end(); ++ci) {
-    temp = (*ci)->calculateIntersection(tempEye, tempDir, intPoint, intNormal);
+    tempT = 2;
+    if ((*ci)->calculateIntersection(tempEye, tempDir, tempT, intPoint, intNormal, tempKd, tempKs, tempShin)) {
+      if (tempT < t && tempT > pow(10, -5)) {
+        t = tempT;
 
-    if (intPoint[0] != 0 || intPoint[1] != 0 || intPoint[2] != 0) {
-      if ((eye - intPoint).length() < (eye - retInt).length()) {
-        retInt = m_trans * intPoint;
-        retNormal = m_invtrans.transpose() * intNormal;
-	retNormal.normalize();
-        ret = temp;
+        kd = tempKd;
+        ks = tempKs;
+        shin = tempShin;
+
+        retPoint = m_trans * intPoint;
+        retNormal = m_invtrans.transpose() * intNormal; 
+
+        retNormal.normalize();
+        ret = true;
       }
     }
   }
@@ -42,9 +52,26 @@ SceneNode* SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3
   return ret;
 }
 
-SceneNode* GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, Point3D &ret, Vector3D& normal) {
-  m_primitive->intersection(eye, rayDir, ret, normal);
-  return this;
+bool GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, double &t, Point3D &retPoint, Vector3D& retNormal, Colour &kd, Colour &ks, double &shin) {
+  double tempT; 
+  Point3D tempEye = m_invtrans * eye;
+  Vector3D tempDir = m_invtrans * rayDir;
+
+  Vector3D tempNormal;
+  Point3D tempPoint;
+  if (m_primitive->intersection(tempEye, tempDir, tempT, tempPoint, tempNormal)) {
+
+    retPoint = m_trans * tempPoint;
+    retNormal = m_invtrans.transpose() * tempNormal; 
+
+    kd = m_material->get_kd(); 
+    ks = m_material->get_ks();
+    shin = m_material->get_shininess();
+    
+    t = tempT;
+    return true;
+  }
+  return false;
 }
 
 void SceneNode::calculateColour(Colour ambiant, Colour diffuse, Colour specular, Colour &ret) {

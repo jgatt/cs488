@@ -13,6 +13,7 @@ public:
        const std::vector< std::vector<int> >& faces);
 
   typedef std::vector<int> Face;
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal);
   
 private:
   std::vector<Point3D> m_verts;

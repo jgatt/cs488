@@ -22,19 +22,19 @@ NonhierSphere::~NonhierSphere()
 {
 }
 
-bool Primitive::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, Vector3D &normal) {
+bool Primitive::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal) {
 
 }
 
-bool Cube::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, Vector3D &normal) {
+bool Cube::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal) {
 
 } 
 
-bool Sphere::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, Vector3D &normal) {
+bool Sphere::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal) {
 
 }
 
-bool NonhierBox::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, Vector3D &normal) {
+bool NonhierBox::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal) {
 	float tmin, tmax, tymin, tymax, tzmin, tzmax, divx, divy, divz;
 	Point3D max_pos = Point3D(m_pos[0] + m_size, m_pos[1] + m_size, m_pos[2] + m_size);
 	Point3D centre_pos = Point3D(m_pos[0] + (m_size/2), m_pos[1] + (m_size/2), m_pos[2] + (m_size/2));
@@ -68,7 +68,7 @@ bool NonhierBox::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, 
 	}
 	
 	divz = 1.0f / rayDir[2];
-	if (rayDir[2] >= 0) {
+	if (divz >= 0) {
 		tzmin = (m_pos[2] - rayOrigin[2]) * divz;
 		tzmax = (max_pos[2] - rayOrigin[2]) * divz;
 	} else {
@@ -86,16 +86,16 @@ bool NonhierBox::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, 
 	}
 
 	if ((tmin < 1) && (tmax > 0)) {
-		//cout << tmin << " tmax: " << tmax << endl; 
-		ret = rayOrigin + tmin*(rayDir);
-		normal = ret - centre_pos;
+		ret = tmin;
+		intersection = rayOrigin + ret*rayDir;
+		normal = intersection - centre_pos;
 		return true;
 	} else {
 		return false;
 	}
 } 
 
-bool NonhierSphere::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, Vector3D &normal) {
+bool NonhierSphere::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal) {
 	double a, b, c;
 
 	Vector3D orgpos = rayOrigin - m_pos;
@@ -115,8 +115,9 @@ bool NonhierSphere::intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &re
 			t = roots[1];
 		}
 
-		ret = rayOrigin + t*rayDir; 
-		normal = ret - m_pos;
+		ret = t;
+		intersection = (rayOrigin + t*rayDir);
+		normal = intersection - m_pos;
 		return true;
 	}
 

@@ -6,19 +6,19 @@
 class Primitive {
 public:
   virtual ~Primitive();
-  virtual bool intersection(Point3D, Vector3D, Point3D&, Vector3D &normal);
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal);
 };
 
 class Sphere : public Primitive {
 public:
   virtual ~Sphere();
-  virtual bool intersection(Point3D, Vector3D, Point3D&, Vector3D &normal);
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal);
 };
 
 class Cube : public Primitive {
 public:
   virtual ~Cube();
-  virtual bool intersection(Point3D, Vector3D, Point3D&, Vector3D &normal);
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal);
 };
 
 class NonhierSphere : public Primitive {
@@ -28,7 +28,7 @@ public:
   {
   }
   virtual ~NonhierSphere();
-  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, Point3D &ret, Vector3D &normal);
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal);
 
 private:
   Point3D m_pos;
@@ -44,7 +44,7 @@ public:
   }
   
   virtual ~NonhierBox();
-  virtual bool intersection(Point3D, Vector3D, Point3D&, Vector3D &normal);
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal);
 
 private:
   Point3D m_pos;
