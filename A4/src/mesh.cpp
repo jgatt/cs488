@@ -1,6 +1,8 @@
 #include "mesh.hpp"
 #include <iostream>
 
+#define BOUNDING_BOX 0
+
 using namespace std;
 
 Mesh::Mesh(const std::vector<Point3D>& verts,
@@ -8,9 +10,45 @@ Mesh::Mesh(const std::vector<Point3D>& verts,
   : m_verts(verts),
     m_faces(faces)
 {
+	double s_bound, m_bound;
+	s_bound = m_verts[m_faces[0][0]][0];
+	m_bound = m_verts[m_faces[0][0]][0];
+	for (int i = 0; i < m_faces.size(); i++) {
+		for (int j = 0; j < m_faces[i].size(); j++) {
+			Point3D temp = m_verts[m_faces[i][j]];
+			if (temp[0] < s_bound) {
+				s_bound = temp[0];
+			}
+			if (temp[1] < s_bound) {
+				s_bound = temp[1];
+			}
+			if (temp[2] < s_bound) {
+				s_bound = temp[2];
+			}
+
+			if (temp[0] > m_bound) {
+				m_bound = temp[0];
+			}
+			if (temp[1] > m_bound) {
+				m_bound = temp[1];
+			}
+			if (temp[2] > m_bound) {
+				m_bound = temp[2];
+			}
+		}
+	}
+	cout << "s_bound: " << s_bound << " m_bound: " << m_bound << endl;
+	bound = new NonhierBox(Point3D(s_bound, s_bound, s_bound), m_bound - s_bound);
 }
 
 bool Mesh::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D &intersection, Vector3D &normal) {
+	if (BOUNDING_BOX) {
+		return bound->intersection(rayOrigin, rayDir, ret, intersection, normal);
+	} else 
+	if (!(bound->intersection(rayOrigin, rayDir, ret, intersection, normal))) {
+		return false;
+	} 
+
   double t = 2.0; 
   Vector3D normalFace;
   Point3D intPoint;
@@ -52,7 +90,7 @@ bool Mesh::intersection(Point3D rayOrigin, Vector3D rayDir, double &ret, Point3D
     }
   }
 
-  if (t <= 1.0) {// && t > pow(10, -2)) {
+  if ((t <= 1.0) && t > pow(10, -3)) {
     ret = t;
     return true;
   }

@@ -2,6 +2,8 @@
 #include "image.hpp"
 #include <iostream>
 
+#define REFLECTION 1
+
 using namespace std;
 
 Colour directLight(Point3D intersection, Vector3D normal, Light *light, SceneNode *root, Colour kd2) {
@@ -36,7 +38,6 @@ Colour directLight(Point3D intersection, Vector3D normal, Light *light, SceneNod
     } 
 
     return ndotlight * iD;
-  //}
 }
 
 Colour ray_colour(Point3D rayOrigin, Vector3D rayDir, Light *light, SceneNode *root, Colour ambient, Colour background, int numBounces) {
@@ -92,13 +93,13 @@ Colour ray_colour(Point3D rayOrigin, Vector3D rayDir, Light *light, SceneNode *r
         colour = colour + directLight(intPoint, normal, light, root, kd) * kd;
       } 
 
-      if (ks.R() != 0 || ks.B() != 0 || ks.G() != 0) { //has k
-        //colour = colour + specular*ks*iS;
-      } 
-
-      if (shin > 0 && numBounces < 25) {
-        Vector3D reflection = rayDir - 2*rayDir.dot(normal)*normal;
-        colour = colour + 0.4*ks*iS*ray_colour(intPoint, reflection, light, root, ambient, background, numBounces+1);
+      if (shin > 0) { //has k
+	if (REFLECTION && numBounces < 25) {
+		Vector3D reflection = rayDir - 2*rayDir.dot(normal)*normal;
+        	colour = colour + 0.4*ks*iS*ray_colour(intPoint, reflection, light, root, ambient, background, numBounces+1);
+	} else {
+		colour = colour + specular*ks*iS;
+	}
       } 
 
       return colour;
@@ -146,19 +147,6 @@ void a4_render(// What to render
                const std::list<Light*>& lights
                )
 {
-  // Fill in raytracing code here.
-
-  std::cerr << "Stub: a4_render(" << root << ",\n     "
-            << "fname: " << filename << ", width: " << width << ", height: " << height << ",\n"
-            << " eye: " << eye << ", view: " << view << ", up: " << up << ", fov: " << fov << ",\n     "
-            << ambient << ",\n     {";
-
-  for (std::list<Light*>::const_iterator I = lights.begin(); I != lights.end(); ++I) {
-    if (I != lights.begin()) std::cerr << ", ";
-    std::cerr << **I;
-  }
-  std::cerr << "});" << std::endl;
-  
   Image img(width, height, 3);
 
   double worldWidth, worldHeight, d;
@@ -166,13 +154,11 @@ void a4_render(// What to render
   worldHeight = 2*d*tan(((fov/2.0) * M_PI) / 180.0); 
   worldWidth = ((double)width / (double)height) * worldHeight;
 
-  cout << "ww: " << worldWidth  << " wh: " << worldHeight << endl;
   //SceneNode* temp;
 
   for (int y = 0; y < height; y++) {
-    cout << 100 * ((double)y / (double)height) << endl;
+    cout << 100 * ((double)y / (double)height) << " % complete" << endl;
     for (int x = 0; x < width; x++) {
-
       Point3D rayImage = Point3D(x, height - y, 0);  
 
       rayImage[0] += (-width / 2);

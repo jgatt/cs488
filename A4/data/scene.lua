@@ -86,6 +86,6 @@ mickey:scale(15, 15, 15)
 mickey:set_material(stone)
 
 gr.render(scene,
-	  'my_scene.png', 512, 512,
+	  'cow_cult.png', 1024, 1024,
 	  {0, 2, 30}, {0, 0, -1}, {0, 1, 0}, 50,
 	  {0.4, 0.4, 0.4}, {gr.light({200, 202, 430}, {0.8, 0.8, 0.8}, {1, 0, 0})})
