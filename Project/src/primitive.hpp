@@ -51,4 +51,36 @@ private:
   double m_size;
 };
 
+class NonhierCylinder : public Primitive {
+public:
+  NonhierCylinder(const Point3D& pos, double radius, double height)
+    : m_pos(pos), m_radius(radius), trans_pos(pos), m_height(height)
+  {
+  }
+  virtual ~NonhierCylinder();
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]);
+
+private:
+  Point3D m_pos;
+  Point3D trans_pos;
+  double m_radius;
+  double m_height;
+};
+
+class NonhierCone : public Primitive {
+public:
+  NonhierCone(const Point3D& pos, double radius, double height)
+    : m_pos(pos), m_radius(radius), trans_pos(pos), m_height(height)
+  {
+  }
+  virtual ~NonhierCone();
+  virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]);
+
+private:
+  Point3D m_pos;
+  Point3D trans_pos;
+  double m_radius;
+  double m_height;
+};
+
 #endif

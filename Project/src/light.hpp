@@ -1,6 +1,7 @@
 #ifndef CS488_LIGHT_HPP
 #define CS488_LIGHT_HPP
 
+#include "primitive.hpp"
 #include "algebra.hpp"
 #include <iosfwd>
 
@@ -10,6 +11,7 @@ struct Light {
   
   Colour colour;
   Point3D position;
+  double radius;
   double falloff[3];
 };
 

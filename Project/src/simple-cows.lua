@@ -93,16 +93,16 @@ buckyball:scale(1.5, 1.5, 1.5)
 cow_number = 1
 
 for _, pt in pairs({
-		      {{1,1.3,14}, 20},
-		      {{5,1.3,-11}, 180},
-		      {{-5.5,1.3,-3}, -60}}) do
+		      {{1,1.3,14}, 20, {2, 0, 0}},
+		      {{5,1.3,-11}, 180, {-1, 1, -1}},
+		      {{-5.5,1.3,-3}, -60, {2, 1, 1}}}) do
    cow_instance = gr.node('cow' .. tostring(cow_number))
    scene:add_child(cow_instance)
    cow_instance:add_child(cow)
    cow_instance:translate(unpack(pt[1]))
    cow_instance:rotate('Y', pt[2])
    cow_instance:scale(1.4, 1.4, 1.4)
-   cow_instance:set_velocity(2, 0, 0)
+   --cow_instance:set_velocity(unpack(pt[3]))
    
    cow_number = cow_number + 1
 end
@@ -116,24 +116,13 @@ for i = 1, 6 do
    an_arc:add_child(arc)
 end
 
-temp_sphere = gr.node('sphere thing')
-temp_sphere:rotate('Y', 270)
-temp_sphere:rotate('X', -90)
---scene:add_child(temp_sphere)
+temp_scene = gr.node("scene")
 
-union_thing = gr.boolean("un", 1)
-temp_sphere:add_child(union_thing)
-
-ss = gr.nh_sphere("ss", {2, 2, -1}, 3.5)
-ss:rotate('Y', 45)
-union_thing:add_child(ss)
-ss:set_material(hide)
-
-ss2 = gr.nh_sphere("ss2", {3, 3, -1}, 2.0)
-union_thing:add_child(ss2)
-ss2:set_material(stone)
+s = gr.nh_sphere('s', {0, 0, -4}, 3)
+temp_scene:add_child(s)
+s:set_material(hide)
 
 gr.render(scene,
 	  'simple_cows.png', 1024, 1024,
 	  {0, 2, 30}, {0, 0, -1}, {0, 1, 0}, 50,
-	  {0.4, 0.4, 0.4}, {gr.light({200, 202, 430}, {0.8, 0.8, 0.8}, {1, 0, 0})})
+	  {0.4, 0.4, 0.4}, {gr.light({200, 202, 430}, {0.8, 0.8, 0.8}, {1, 0, 0}, 2)})

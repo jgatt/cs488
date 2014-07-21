@@ -68,7 +68,7 @@ bool Mesh::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point
 	   }
       }
 
-  double t = 2.0; 
+  double t = 500.0; 
   for (int i = 0; i < m_faces.size(); i++) {
     Point3D A = m_verts[m_faces[i][0]];
     Point3D B = m_verts[m_faces[i][1]];
@@ -105,7 +105,7 @@ bool Mesh::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point
     }
   }
 
-  if ((t <= 1.0) && t > pow(10, -3)) {
+  if (t > pow(10, -3)) {
     ret[0] = t;
     return true;
   }

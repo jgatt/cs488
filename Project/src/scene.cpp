@@ -71,8 +71,8 @@ bool SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, double timeP
 
 bool GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, double timePassed, double t[2], Point3D retPoint[2], Vector3D retNormal[2], Colour &kd, Colour &ks, double &shin) {
   if (has_velocity && timePassed > 0) {
-    ray_transform = (timePassed*m_invvelocity) * m_invtrans;
-    reverse_ray_transform = (-timePassed*m_invvelocity) * m_trans; 
+    ray_transform =  m_invtrans * (timePassed*m_invvelocity);
+    reverse_ray_transform =  m_trans * (timePassed*m_velocity); 
   } else {
     ray_transform = m_invtrans;
     reverse_ray_transform = m_trans;
@@ -103,8 +103,8 @@ bool GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, double ti
 
 bool BooleanNode::calculateIntersection(Point3D eye, Vector3D rayDir, double timePassed, double t[2], Point3D retPoint[2], Vector3D retNormal[2], Colour &kd, Colour &ks, double &shin) {
   if (has_velocity && timePassed > 0) {
-    ray_transform = (timePassed*m_invvelocity) * m_invtrans;
-    reverse_ray_transform = (-timePassed*m_invvelocity) * m_trans; 
+    ray_transform =  m_invtrans * (timePassed*m_invvelocity);
+    reverse_ray_transform =  m_trans * (timePassed*m_velocity); 
   } else {
     ray_transform = m_invtrans;
     reverse_ray_transform = m_trans;
@@ -131,53 +131,78 @@ bool BooleanNode::calculateIntersection(Point3D eye, Vector3D rayDir, double tim
   if (intersected[0] || intersected[1]) {
     int retIndex = 0;
     int retPrimitive = 0;
+    int backIndex = 1;
+    int backPrimitive = 1;
+    int factor = 1;
 
     if (m_type == 1) { //union..get first intersection
       ret = true;
       if (intersected[0] && intersected[1]) {
-        if (tempT[0][0] < tempT[1][0]) {
-          retPrimitive = 0;
-        } else {
-          retPrimitive = 1;
+        if (tempT[1][0] < tempT[0][0]) {
+          retPrimitive = 1; 
+        } 
+
+        if (tempT[1][1] < tempT[0][1]) {
+          backPrimitive = 1;
         }
+
       } else if (intersected[0] && !intersected[1]) {
-        retPrimitive = 0;
+        backPrimitive = 0;
       } else {
         retPrimitive = 1;
       }
     } else if (m_type == 2) {
       if (intersected[0] && intersected[1]) {
+
         if (tempT[0][0] < tempT[1][0]) {
           if (tempT[1][0] <= tempT[0][1]) {
             ret = true;
             retPrimitive = 1;
+            backPrimitive = 0;
           }
+
         } else if (tempT[1][0] < tempT[0][0]) {
           if (tempT[0][0] <= tempT[1][1]) {
             ret = true;
-            retPrimitive = 0;
           }
         }
       } 
+
     } else if (m_type == 3) {
       if (intersected[0] && intersected[1]) {
         if (tempT[0][0] < tempT[1][0]) {
           ret = true;
+
+          if (tempT[0][1] < tempT[1][0]) {
+            backPrimitive = 0;
+          } else if (tempT[1][0] < tempT[0][1]) {
+            backIndex = 0;
+          } 
         } else {
+
           if (tempT[1][1] <= tempT[0][1]) {
             retPrimitive = 1;
             retIndex = 1;
+            backPrimitive = 0;
             ret = true; 
+            factor = -1;
           }
         }
       } else if (intersected[0] && !intersected[1]) {
         ret = true;
+        backPrimitive = 0;
       }
     }
 
     t[0] = tempT[retPrimitive][retIndex];
+    t[1] = tempT[backPrimitive][backIndex];
+
     retPoint[0] = reverse_ray_transform * intPoint[retPrimitive][retIndex];
-    retNormal[0] = ray_transform.transpose() * intNormal[retPrimitive][retIndex];
+    retPoint[1] = reverse_ray_transform * intPoint[backPrimitive][backIndex];
+
+    retNormal[0] = factor*ray_transform.transpose() * intNormal[retPrimitive][retIndex];
+    retNormal[1] = ray_transform.transpose() * intNormal[backPrimitive][backIndex];
+
     kd = kds[retPrimitive];
     ks = kss[retPrimitive];
     shin = shins[retPrimitive];

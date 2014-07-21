@@ -2,6 +2,7 @@
 #include "polyroots.hpp"
 #include <stdlib.h>
 #include <iostream>
+#include "perlin.hpp"
 
 using namespace std;
 
@@ -19,6 +20,18 @@ Cube::~Cube()
 }
 
 NonhierSphere::~NonhierSphere()
+{
+}
+
+NonhierCylinder::~NonhierCylinder()
+{
+}
+
+NonhierCone::~NonhierCone()
+{
+}
+
+NonhierBox::~NonhierBox()
 {
 }
 
@@ -85,7 +98,7 @@ bool NonhierBox::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2],
 		tmax = tzmax;
 	}
 
-	if ((tmin < 1) && (tmax > 0)) {
+	if ((tmin < 500.0) && (tmax > 0)) {
 		ret[0] = tmin;
 		ret[1] = tmax;
 
@@ -110,6 +123,8 @@ bool NonhierSphere::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[
 	b = 2*(orgpos.dot(rayDir));
 	c = orgpos.dot(orgpos) - (m_radius * m_radius); 
 
+	//double bump = (rand() % 101) / 100.0;
+
 	size_t num_roots = quadraticRoots( a, b, c, roots);
 	if (num_roots > 0) {
 
@@ -124,8 +139,31 @@ bool NonhierSphere::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[
 		intersection[0] = rayOrigin + ret[0]*rayDir;  
 		intersection[1] = rayOrigin + ret[1]*rayDir;  
 
-		normal[0] = intersection[0] - m_pos;	
-		normal[1] = intersection[1] - m_pos;	
+		// //bump mapping
+
+		// double noiseX = perlinNoise(0.1 * intersection[0][0],
+		// 	0.1 * intersection[0][1],
+		// 	0.1 * intersection[0][2]); 
+
+		// double noiseY = perlinNoise(0.1 * intersection[0][1],
+		// 	0.1 * intersection[0][2],
+		// 	0.1 * intersection[0][0]); 
+
+		// double noiseZ = perlinNoise(0.1 * intersection[0][2],
+		// 	0.1 * intersection[0][0],
+		// 	0.1 * intersection[0][1]); 
+
+		//cout << "x: " << noiseX << " y: " << noiseY << " z: " << noiseZ << endl;
+
+		normal[0] = intersection[0] - m_pos;
+
+		//cout << "normal1: " << normal[0] << endl;
+
+		// normal[0][0] = (1.0 - bump) * normal[0][0] + bump*noiseX; 
+		// normal[0][1] = (1.0 - bump) * normal[0][1] + bump*noiseY; 
+		// normal[0][2] = (1.0 - bump) * normal[0][2] + bump*noiseZ; 
+
+		normal[1] = intersection[1] - m_pos;
 
 		delete roots;
 		return true;
@@ -135,6 +173,117 @@ bool NonhierSphere::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[
 	return false;
 }	
 
-NonhierBox::~NonhierBox()
-{
+
+bool NonhierCylinder::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]) {
+	double a, b, c;
+	double *roots = (double*)malloc(2*sizeof(double));
+
+	Vector3D orgpos = rayOrigin - m_pos;
+
+	Point3D bottom = m_pos;
+	Point3D top = m_pos + Vector3D(0, m_height, 0);
+
+	Vector3D AB = (top - bottom);
+	Vector3D A0 = rayOrigin - bottom;
+	Vector3D A0XAB = A0.cross(AB);
+	Vector3D VXAB = rayDir.cross(AB);
+	double ab2 = AB.dot(AB);
+
+	a = VXAB.dot(VXAB);
+	b = 2*(VXAB.dot(A0XAB));
+	c = A0XAB.dot(A0XAB) - (m_radius*m_radius * ab2);
+
+	size_t num_roots = quadraticRoots( a, b, c, roots);
+	if (num_roots > 0) {
+
+		if (roots[0] <= roots[1] || num_roots == 1) {
+			ret[0] =  roots[0];
+			ret[1] = roots[1];
+		} else {
+			ret[0] = roots[1];
+			ret[1] = roots[0];
+		}	
+
+		intersection[0] = rayOrigin + ret[0]*rayDir;  
+		intersection[1] = rayOrigin + ret[1]*rayDir;  
+
+		Point3D projection = bottom + ((AB.dot(intersection[0] - bottom) / ab2) * AB);
+		if ( (projection - bottom).length() + (top - projection).length() > AB.length()) {
+			delete roots;
+			return false;
+		}
+
+		normal[0] = intersection[0] - (m_pos + Vector3D(0, m_height / 2, 0));
+		normal[1] = intersection[1] - (m_pos + Vector3D(0, m_height / 2, 0));
+
+		delete roots;
+		return true;
+	}
+
+	delete roots;
+	return false;
+}
+
+
+bool NonhierCone::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]) {
+	double a, b, c;
+	double *roots = (double*)malloc(2*sizeof(double));
+	//double angleRadians = (m_angle * M_PI) / 180.0; 
+	
+	// Vector3D coneAxis = Vector3D(0, 1, 0);
+	// double AdD = coneAxis.dot(rayDir);
+	// Vector3D E = rayOrigin - m_pos;	
+	// double AdE = coneAxis.dot(E);
+	// double Dde = rayDir.dot(E);
+	// double Ede = E.dot(E); 
+
+	// double cosSquared = cos(angleRadians)*cos(angleRadians);
+	// Vector3D A = Vector3D(0, 1, 0);
+	// double M = A.dot(A) - cosSquared;
+	// Vector3D triangle = rayOrigin - m_pos;
+
+	// a = rayDir.dot(M*rayDir);
+	// b = 2*rayDir.dot(M*triangle);
+	// c = triangle.dot(M*triangle);
+
+	// a = AdD*AdD - cosSquared; 
+	// b = 2 * (AdD*AdE - cosSquared*Dde);
+	// c = AdE*AdE - cosSquared*Ede;
+
+	double k = m_radius / m_height;
+	double yend = m_pos[1] + m_height; 
+
+	a = (rayDir[0]*rayDir[0] + rayDir[2]*rayDir[2] - k*k*rayDir[1]*rayDir[1]);
+	b = 2*(rayOrigin[0]*rayDir[0] + rayOrigin[2]*rayDir[2] - k*k*rayOrigin[1]*rayDir[1]);
+	c = (rayOrigin[0]*rayOrigin[0] + rayOrigin[2]*rayOrigin[2] - k*k*rayOrigin[1]*rayOrigin[1]);
+
+	size_t num_roots = quadraticRoots( a, b, c, roots);
+	if (num_roots > 0) {
+		//cout << "hi?" << endl;
+
+		if (roots[0] <= roots[1] || num_roots == 1) {
+			ret[0] =  roots[0];
+			ret[1] = roots[1];
+		} else {
+			ret[0] = roots[1];
+			ret[1] = roots[0];
+		}	
+
+		intersection[0] = rayOrigin + ret[0]*rayDir;  
+		intersection[1] = rayOrigin + ret[1]*rayDir;  
+
+		if (intersection[0][1] < 0 || intersection[0][1] > yend) {
+			delete roots;
+			return false;
+		}
+
+		normal[0] = intersection[0] - (m_pos + Vector3D(0, m_height / 2, 0));
+		normal[1] = intersection[1] - (m_pos + Vector3D(0, m_height / 2, 0));
+
+		delete roots;
+		return true;
+	}
+
+	delete roots;
+	return false;
 }

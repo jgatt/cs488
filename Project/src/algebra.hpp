@@ -408,11 +408,9 @@ inline Matrix4x4 operator *(double a, const Matrix4x4& b)
 {
   Matrix4x4 ret;
 
-  for(size_t i = 0; i < 4; ++i) {
-    for(size_t j = 0; j < 4; ++j) {
-      ret[i][j] = a*b[i][j];
-    }
-  }
+  ret[0][3] = a*b[0][3];
+  ret[1][3] = a*b[1][3];
+  ret[2][3] = a*b[2][3];
 
   return ret;
 }

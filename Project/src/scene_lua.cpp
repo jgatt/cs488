@@ -205,6 +205,31 @@ int gr_cube_cmd(lua_State* L)
 
 // Create a non-hierarchical sphere node
 extern "C"
+int gr_nh_cylinder_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* data = (gr_node_ud*)lua_newuserdata(L, sizeof(gr_node_ud));
+  data->node = 0;
+
+  const char* name = luaL_checkstring(L, 1);
+
+  Point3D pos;
+  get_tuple(L, 2, &pos[0], 3);
+
+  double radius = luaL_checknumber(L, 3);
+  double height = luaL_checknumber(L, 4);
+
+  data->node = new GeometryNode(name, new NonhierCylinder(pos, radius, height));
+
+  luaL_getmetatable(L, "gr.node");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+
+// Create a non-hierarchical sphere node
+extern "C"
 int gr_nh_sphere_cmd(lua_State* L)
 {
   GRLUA_DEBUG_CALL;
@@ -220,6 +245,31 @@ int gr_nh_sphere_cmd(lua_State* L)
   double radius = luaL_checknumber(L, 3);
 
   data->node = new GeometryNode(name, new NonhierSphere(pos, radius));
+
+  luaL_getmetatable(L, "gr.node");
+  lua_setmetatable(L, -2);
+
+  return 1;
+}
+
+// Create a non-hierarchical sphere node
+extern "C"
+int gr_nh_cone_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* data = (gr_node_ud*)lua_newuserdata(L, sizeof(gr_node_ud));
+  data->node = 0;
+
+  const char* name = luaL_checkstring(L, 1);
+
+  Point3D pos;
+  get_tuple(L, 2, &pos[0], 3);
+
+  double radius = luaL_checknumber(L, 3);
+  double angle = luaL_checknumber(L, 4);
+
+  data->node = new GeometryNode(name, new NonhierCone(pos, radius, angle));
 
   luaL_getmetatable(L, "gr.node");
   lua_setmetatable(L, -2);
@@ -320,7 +370,6 @@ int gr_light_cmd(lua_State* L)
   gr_light_ud* data = (gr_light_ud*)lua_newuserdata(L, sizeof(gr_light_ud));
   data->light = 0;
 
-  
   Light l;
 
   double col[3];
@@ -329,8 +378,11 @@ int gr_light_cmd(lua_State* L)
   get_tuple(L, 3, l.falloff, 3);
 
   l.colour = Colour(col[0], col[1], col[2]);
+
+  double radius = luaL_checknumber(L, 4);
   
   data->light = new Light(l);
+  data->light->radius = radius;
 
   luaL_newmetatable(L, "gr.light");
   lua_setmetatable(L, -2);
@@ -580,6 +632,8 @@ static const luaL_reg grlib_functions[] = {
   {"cube", gr_cube_cmd},
   {"nh_sphere", gr_nh_sphere_cmd},
   {"nh_box", gr_nh_box_cmd},
+  {"nh_cylinder", gr_nh_cylinder_cmd},
+  {"nh_cone", gr_nh_cone_cmd},
   {"mesh", gr_mesh_cmd},
   {"light", gr_light_cmd},
   {"render", gr_render_cmd},
