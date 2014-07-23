@@ -43,7 +43,7 @@ bool SceneNode::calculateIntersection(Point3D eye, Vector3D rayDir, double timeP
 
   bool ret = false; 
   for (ChildList::const_iterator ci = m_children.begin(); ci != m_children.end(); ++ci) {
-    tempT[0] = 2; tempT[1] = 2;
+    tempT[0] = 50; tempT[1] = 50;
 
     if ((*ci)->calculateIntersection(eye_transformed, ray_transformed, timePassed, tempT, intPoint, intNormal, tempKd, tempKs, tempShin)) {
       if (tempT[0] < t[0] && tempT[0] > pow(10, -5)) {
@@ -85,16 +85,55 @@ bool GeometryNode::calculateIntersection(Point3D eye, Vector3D rayDir, double ti
     t[0] = tempT[0];
     t[1] = tempT[1];
 
+    if (has_texture) {
+      if (t[0] > 0) {
+        Point3D tempPoint = eye + (t[0] - 0.0001)*rayDir;
+        double bump = 0;
+
+        m_primitive->getColourFromRay(tempPoint, m_texture, kd, bump); 
+        ks = Colour();
+        shin = 0;
+
+       //  //if (bump > 0) {
+       //    //bump = (rand() % 101) / 100.0;
+
+       // double noiseX = perlinNoise(0.1 * intPoint[0][0],
+       //   0.1 * intPoint[0][1],
+       //   0.1 * intPoint[0][2]); 
+
+       //  double noiseY = perlinNoise(0.1 * intPoint[0][1],
+       //   0.1 * intPoint[0][2],
+       //   0.1 * intPoint[0][0]); 
+
+       //  double noiseZ = perlinNoise(0.1 * intPoint[0][2],
+       //   0.1 * intPoint[0][0],
+       //   0.1 * intPoint[0][1]); 
+
+       //  // cout << "bump: " << bump << endl;
+       //  // cout << "x: " << noiseX << " y: " << noiseY << " z: " << noiseZ << endl;
+
+       //  // cout << "normal0: " << intNormal[0] << endl;
+
+       //  intNormal[0][0] = (1.0 - bump) * intNormal[0][0] + bump*noiseX; 
+       //  intNormal[0][1] = (1.0 - bump) * intNormal[0][1] + bump*noiseY; 
+       //  intNormal[0][2] = (1.0 - bump) * intNormal[0][2] + bump*noiseZ; 
+
+       //  //cout << "normal1: " << intNormal[0] << endl; 
+       //  kd = Colour(0.5, 0.5, 0.5);// 1, 1);
+      //}
+      }
+    } else {
+      kd = m_material->get_kd(); 
+      ks = m_material->get_ks();
+      shin = m_material->get_shininess();
+    }
+
     retPoint[0] = reverse_ray_transform * intPoint[0];
     retPoint[1] = reverse_ray_transform * intPoint[1];
 
     retNormal[0] = ray_transform.transpose() * intNormal[0]; 
     retNormal[1] = ray_transform.transpose() * intNormal[1]; 
 
-    kd = m_material->get_kd(); 
-    ks = m_material->get_ks();
-    shin = m_material->get_shininess();
-    
     return true;
   }
 
@@ -117,7 +156,7 @@ bool BooleanNode::calculateIntersection(Point3D eye, Vector3D rayDir, double tim
   //stuff
   int i = 0;
   for (ChildList::const_iterator ci = m_children.begin(); ci != m_children.end(); ++ci) {
-    tempT[i][0] = 2; tempT[i][1] = 2;
+    tempT[i][0] = 50; tempT[i][1] = 50;
 
     if ((*ci)->calculateIntersection(eye_transformed, ray_transformed, timePassed, tempT[i], intPoint[i], intNormal[i], kds[i], kss[i], shins[i])) {
       if (tempT[i][0] < t[0] && tempT[i][0] > pow(10, -5)) {
@@ -314,6 +353,8 @@ GeometryNode::GeometryNode(const std::string& name, Primitive* primitive)
   intNormal = (Vector3D*)malloc(sizeof(Vector3D)*2);
   intPoint = (Point3D*)malloc(sizeof(Point3D)*2);
   tempT = (double*)malloc(sizeof(double)*2);
+  has_texture = false;
+  m_texture = new CubeMap();
 }
 
 GeometryNode::~GeometryNode()
@@ -321,6 +362,8 @@ GeometryNode::~GeometryNode()
   delete intNormal;
   delete intPoint;
   delete tempT; 
+  delete m_material;
+  delete m_texture;
 }
 
 BooleanNode::BooleanNode(const std::string& name, int type)

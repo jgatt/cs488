@@ -2,11 +2,13 @@
 #define CS488_PRIMITIVE_HPP
 
 #include "algebra.hpp"
+#include "CubeMap.hpp"
 
 class Primitive {
 public:
   virtual ~Primitive();
   virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]);
+  virtual void getColourFromRay(Point3D intersection, CubeMap* m_texture, Colour &colour, double& bump); 
 };
 
 class Sphere : public Primitive {
@@ -29,6 +31,7 @@ public:
   }
   virtual ~NonhierSphere();
   virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]);
+  virtual void getColourFromRay(Point3D intersection, CubeMap* m_texture, Colour &colour, double& bump); 
 
 private:
   Point3D m_pos;
@@ -45,6 +48,7 @@ public:
   
   virtual ~NonhierBox();
   virtual bool intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2], Point3D intersection[2], Vector3D normal[2]);
+  virtual void getColourFromRay(Point3D intersection, CubeMap* m_texture, Colour &colour, double& bump); 
 
 private:
   Point3D m_pos;

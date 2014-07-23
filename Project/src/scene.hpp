@@ -6,6 +6,7 @@
 #include "algebra.hpp"
 #include "primitive.hpp"
 #include "material.hpp"
+#include "CubeMap.hpp"
 
 struct undoObject {
   Matrix4x4 m_trans;
@@ -147,14 +148,22 @@ public:
     m_material = material;
   }
 
+  void set_texture_face(Image* texture, int face)
+  {
+    m_texture->set_face(texture, face);
+    has_texture = true;
+  }
+
 protected:
   Material* m_material;
   Primitive* m_primitive;
+  CubeMap* m_texture;
 
 private:
   Vector3D *intNormal;
   Point3D   *intPoint;
   double    *tempT;
+  bool has_texture;
 };
 
 #endif

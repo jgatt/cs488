@@ -45,6 +45,8 @@
 #include "light.hpp"
 #include "a4.hpp"
 #include "mesh.hpp"
+#include "image.hpp"
+#include "CubeMap.hpp"
 
 // Uncomment the following line to enable debugging messages
 // #define GRLUA_ENABLE_DEBUG
@@ -86,6 +88,12 @@ struct gr_material_ud {
 // allocated by Lua to represent lights.
 struct gr_light_ud {
   Light* light;
+};
+
+// The "userdata" type for a light. Objects of this type will be
+// allocated by Lua to represent lights.
+struct gr_texture_ud {
+  Image* texture;
 };
 
 // Useful function to retrieve and check an n-tuple of numbers.
@@ -164,8 +172,6 @@ int gr_boolean_cmd(lua_State* L)
 
   return 1;
 }
-
-
 
 // Create a sphere node
 extern "C"
@@ -463,6 +469,26 @@ int gr_material_cmd(lua_State* L)
   return 1;
 }
 
+// Create a material
+extern "C"
+int gr_texture_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_texture_ud* data = (gr_texture_ud*)lua_newuserdata(L, sizeof(gr_texture_ud));
+  data->texture = 0;
+  
+  const char* name = luaL_checkstring(L, 1);
+
+  data->texture = new Image();
+  data->texture->loadPng(name);
+
+  luaL_newmetatable(L, "gr.texture");
+  lua_setmetatable(L, -2);
+  
+  return 1;
+}
+
 // Add a child to a node
 extern "C"
 int gr_node_add_child_cmd(lua_State* L)
@@ -503,6 +529,28 @@ int gr_node_set_material_cmd(lua_State* L)
   Material* material = matdata->material;
 
   self->set_material(material);
+
+  return 0;
+}
+
+extern "C"
+int gr_node_set_texture_cmd(lua_State* L)
+{
+  GRLUA_DEBUG_CALL;
+  
+  gr_node_ud* selfdata = (gr_node_ud*)luaL_checkudata(L, 1, "gr.node");
+  luaL_argcheck(L, selfdata != 0, 1, "Node expected");
+
+  GeometryNode* self = dynamic_cast<GeometryNode*>(selfdata->node);
+
+  luaL_argcheck(L, self != 0, 1, "Geometry node expected");
+  
+  gr_texture_ud* matdata = (gr_texture_ud*)luaL_checkudata(L, 2, "gr.texture");
+  luaL_argcheck(L, matdata != 0, 2, "texture expected");
+
+  int faceNum = luaL_checknumber(L, 3);
+
+  self->set_texture_face(matdata->texture, faceNum);
 
   return 0;
 }
@@ -628,6 +676,7 @@ static const luaL_reg grlib_functions[] = {
   {"boolean", gr_boolean_cmd},
   {"joint", gr_joint_cmd},
   {"material", gr_material_cmd},
+  {"texture", gr_texture_cmd},
   // New for assignment 4
   {"cube", gr_cube_cmd},
   {"nh_sphere", gr_nh_sphere_cmd},
@@ -655,6 +704,7 @@ static const luaL_reg grlib_functions[] = {
 static const luaL_reg grlib_node_methods[] = {
   {"__gc", gr_node_gc_cmd},
   {"add_child", gr_node_add_child_cmd},
+  {"set_texture", gr_node_set_texture_cmd},
   {"set_material", gr_node_set_material_cmd},
   {"set_velocity", gr_node_set_velocity_cmd},
   {"scale", gr_node_scale_cmd},

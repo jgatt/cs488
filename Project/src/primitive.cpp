@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include "perlin.hpp"
+#include "helpers.hpp"
 
 using namespace std;
 
@@ -287,3 +288,63 @@ bool NonhierCone::intersection(Point3D rayOrigin, Vector3D rayDir, double ret[2]
 	delete roots;
 	return false;
 }
+
+void Primitive::getColourFromRay(Point3D intersection, CubeMap* m_texture, Colour &colour, double& bump) {
+
+} 
+
+void NonhierSphere::getColourFromRay(Point3D intersection, CubeMap* m_texture, Colour &colour, double& bump) {
+	Vector3D vp = intersection - m_pos;
+	vp.normalize();
+	double u= 0, v = 0;
+
+	u = 0.5 + (atan2(vp[2], vp[0]) / (2* M_PI));	
+	v = 0.5 - (asin(vp[1]) / M_PI);
+
+	readTexture(m_texture->front(), u, v, colour);
+} 
+
+void NonhierBox::getColourFromRay(Point3D intersectionPoint, CubeMap* m_texture, Colour &colour, double& bump) {
+ Point3D centre_pos(m_pos[0] + m_size/2.0, m_pos[1] + m_size/2.0, m_pos[2] + m_size/2.0);
+  Vector3D d(intersectionPoint - centre_pos);
+  d.normalize();
+  double u = 0, v = 0;
+
+  if (abs(d[2]) >= abs(d[0]) && abs(d[2]) >= abs(d[1])) { // front or back face
+    if (d[2] > 0) { // back face
+    	u = 1 - ((intersectionPoint[0] - m_pos[0]) / m_size);
+      v = 1 -  ((intersectionPoint[1] - m_pos[1]) / m_size);
+      //cout << "BACK" << endl;
+      readTexture(m_texture->front(), u, v, colour);
+    } else { // front face
+    	u = ((intersectionPoint[0] - m_pos[0]) / m_size);
+      v = 1 -  ((intersectionPoint[1] - m_pos[1]) / m_size);
+
+      readTexture(m_texture->back(), u, v, colour);
+    }
+  } else if (abs(d[1]) >= abs(d[0]) && abs(d[1]) >= abs(d[2])) { // top or bottom face
+    if (d[1] > 0) { // top face
+    	u = ((intersectionPoint[0] - m_pos[0]) / m_size);
+      v = ((intersectionPoint[2] - m_pos[2]) / m_size);
+
+      readTexture(m_texture->bottom(), u, v, colour);
+    } else { // bottom face
+    	u = ((intersectionPoint[0] - m_pos[0]) / m_size);
+      v = 1 - ((intersectionPoint[2] - m_pos[2]) / m_size);
+
+      readTexture(m_texture->top(), u, v, colour);
+    }
+  } else if (abs(d[0]) >= abs(d[1]) && abs(d[0]) >= abs(d[2])) { // left or right face
+    if (d[0] > 0) { // right face
+    	u = 1 - ((intersectionPoint[2] - m_pos[2]) / m_size);
+      v = 1 - ((intersectionPoint[1] - m_pos[1]) / m_size);
+
+      readTexture(m_texture->right(), u, v, colour);
+    } else { // left face
+    	u = ((intersectionPoint[2] - m_pos[2]) / m_size);
+      v = 1 - ((intersectionPoint[1] - m_pos[1]) / m_size);
+
+      readTexture(m_texture->left(), u, v, colour);
+    }
+  }	
+} 
